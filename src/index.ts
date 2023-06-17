@@ -29,13 +29,12 @@ import {guildMemberUpdate} from "./action_guildMemberUpdate"
 import {messageCreate} from "./action_messageCreate"
 import {messageDelete} from "./action_messageDelete"
 
-// change this during development
-export var DEBUGMODE = true
+export var DEBUGMODE = false
 
-console.log(`Reading forcenodebug - ${prop.get("forcenodebug")}`)
-if (prop.get("forcenodebug") == true && DEBUGMODE){
-    console.log("Forcing to run without debugmode")
-    DEBUGMODE = false
+console.log(`Reading debugmode - ${prop.get("debugmode")}`)
+if (prop.get("debugmode") == true){
+    console.log("Running with debugmode.")
+    DEBUGMODE = true
 }
 
 //CONSTANTS
