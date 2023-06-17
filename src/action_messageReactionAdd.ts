@@ -2,7 +2,7 @@ import * as DiscordJS from "discord.js"
 import {Client, MessageReaction, PartialMessageReaction} from 'discord.js'
 import {MessageActionRow, MessageButton} from "discord.js"
 import {
-    NO_EMOJI_ID, postRegularRejectButtons, postRuleRejectButtons,
+    NO_EMOJI_ID,
     REDSTONE_EMOJI,
     REDSTONE_EMOJI_ID, RULE_PHRASE_EMOJI,
     RULE_PHRASE_TEXT,
@@ -10,6 +10,7 @@ import {
     YES_EMOJI_ID
 } from "./index";
 import {unescapeFormatting} from "./utility";
+import {postRegularRejectButtons, postRuleRejectButtons} from "./zTopic_application_management"
 
 export async function messageReactionAdd(client: Client, reaction: MessageReaction | PartialMessageReaction) {
     console.log(`messageReactionAdd triggered`)

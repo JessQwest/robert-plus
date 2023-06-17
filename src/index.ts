@@ -1,26 +1,20 @@
 var cron = require('node-cron')
 import * as DiscordJS from 'discord.js'
-const { MessageActionRow, MessageButton } = require('discord.js');
-import * as dotenv from 'dotenv';
+const { MessageActionRow, MessageButton } = require('discord.js')
+import * as dotenv from 'dotenv'
 // @ts-ignore
-import { v4 as uuidv4 } from 'uuid';
-import {TextBasedChannel} from "discord.js";
+import { v4 as uuidv4 } from 'uuid'
+import {TextBasedChannel} from "discord.js"
 dotenv.config()
-const fetch = require('node-fetch');
-var mysql = require('mysql');
+var mysql = require('mysql')
 const PropertiesReader = require('properties-reader')
 const prop = PropertiesReader('robert.properties')
 
 import * as db_setup from './db_setup'
 import * as scheduled_jobs from './scheduled_jobs'
 import * as command_management from './command_management'
-import {
-    capitalizeFirstLetter,
-    escapeFormatting,
-    unescapeFormatting,
-} from './utility'
-import {messageReactionAdd} from "./action_messageReactionAdd";
-import {guildMemberRemove} from "./action_guildMemberRemove";
+import {messageReactionAdd} from "./action_messageReactionAdd"
+import {guildMemberRemove} from "./action_guildMemberRemove"
 import {
     interactionCreateButton,
     interactionCreateCommand
@@ -57,15 +51,30 @@ export const REDSTONE_EMOJI: string = `<:redstone:${REDSTONE_EMOJI_ID}>`
 // channel constants
 export const ALERT_CHANNEL = DEBUGMODE ? "970336504364818452" : "1008083728863596716"
 export const BOT_LOG_CHANNEL_ID = "970103685810118796"
+export const MESSAGES_TO_ROBERT_CHANNEL_ID = "970115159781683290"
 export const APPLICATION_NOTIFICATION_CHANNEL_ID = DEBUGMODE ? "970336504364818452" : "829119465718284358"
 export const MAIN_ANNOUNCEMENT_CHANNEL = DEBUGMODE ? "772844397020184579" : "706923005132931135"
+export const APPLICATION_CHANNEL_ID = DEBUGMODE ? "970336504364818452" : "908855513163399268" // channel where applications are posted
+export const APPLICATION_VOTING_CHANNEL_ID = DEBUGMODE ? "970336504364818452" : "805296027241676820" // channel where applications summaries are posted and voted on
+
+var channelIDtoPostApplications: string = ""
+var channelIDtoPostApplicationNotification: string = ""
+if (DEBUGMODE){
+    channelIDtoPostApplications = "970336504364818452"
+    channelIDtoPostApplicationNotification = "970336504364818452"
+}
+else{
+    channelIDtoPostApplications = "805296027241676820"
+    channelIDtoPostApplicationNotification = "829119465718284358"
+}
 
 // server constants
 export const APPLICATION_SERVER_ID = "743616108288016464"
 
 // other constants
-//second number needs to be one greater than the majority of staff (for 5 staff, majority is 3, so this value needs to be 4)
+// second number needs to be one greater than the majority of staff (for 5 staff, majority is 3, so this value needs to be 4)
 export const staffReactThreshold = DEBUGMODE ? 2 : 4
+export const ROBERT_USER_ID = "969760796278157384"
 
 //CONSTANTS END
 
@@ -77,12 +86,6 @@ export const client = new DiscordJS.Client({
         "CHANNEL", "MESSAGE"
     ]
 })
-
-//CHANNEL DEFINITIONS
-
-//const NOTIFCATION_CHANNEL: TextBasedChannel = client.channels.fetch(BOT_LOG_CHANNEL_ID) as TextBasedChannel
-
-//CHANNEL DEFINITIONS END
 
 var dbHost: String = ""
 var dbPort: String = ""
@@ -143,15 +146,14 @@ client.on('ready', async () =>{
     command_management.registerCommands()
 
     if (client.user != null) {
-        client.user.setActivity(`${SERVER_NAME}`,{type: "PLAYING"})
-        if (DEBUGMODE) client.user.setActivity("DEBUG MODE",{type: "PLAYING"})
+        client.user.setActivity(`${SERVER_NAME}`, {type: "PLAYING"})
+        if (DEBUGMODE) client.user.setActivity("DEBUG MODE", {type: "PLAYING"})
     }
-
-    console.log(`The bot is ready ${new Date().toISOString()}`)
 
     debugchannel = await client.channels.fetch(BOT_LOG_CHANNEL_ID) as TextBasedChannel
 
-    // @ts-ignore
+    console.info(`The bot is ready ${new Date().toISOString()}`)
+
     await debugchannel.send("Bot Started")
 })
 
@@ -183,35 +185,6 @@ client.on('messageCreate', async (message) => {
     await messageCreate(client, message)
 })
 
-process.on('unhandledRejection', error => {
-    console.error(`error time ${new Date().toISOString()}`)
-    console.error('Unhandled promise rejection:', error);
-    // @ts-ignore
-    debugchannel.send(`Unhandled promise rejection: ${error} \n\n${error.stack}`);
-});
-
-client.on('shardError', error => {
-    console.error(`error time ${new Date().toISOString()}`)
-    console.error('A websocket connection encountered an error:', error);
-    // @ts-ignore
-    debugchannel.send(`A websocket connection encountered an error: ${error} \n\n${error.stack}`);
-});
-
-process.on('uncaughtException', error => {
-    console.error(`error time ${new Date().toISOString()}`)
-    console.error('Unhandled exception:', error);
-    // @ts-ignore
-    console.error("error code: !" + error.code + "!")
-    // @ts-ignore
-    if (error.code == "ECONNRESET") {
-        console.log("ECONNRESET Exception");
-        debugchannel.send(`HANDLING ECONNRESET`);
-    }
-    // @ts-ignore
-    debugchannel.send(`Unhandled exception: ${error} \n\n${error.stack}`);
-});
-
-
 // daily housekeep at 1am
 cron.schedule('0 1 * * *', async () => {
     await scheduled_jobs.housekeepTask()
@@ -222,47 +195,35 @@ cron.schedule('0,5,10,15,20,25,30 6 * * *', async () => {
     await scheduled_jobs.sleepyTime()
 })
 
-export function postRuleRejectButtons(mcusername: string, discordID: string, channel: DiscordJS.TextBasedChannel) {
-    const ruleViolationButton = new MessageActionRow()
-        .addComponents(
-            new MessageButton()
-                .setCustomId(`${mcusername},${discordID},rulereject`)
-                .setLabel(`${RULE_PHRASE_EMOJI} ${capitalizeFirstLetter(RULE_PHRASE_TEXT)} rule reject ${unescapeFormatting(mcusername)}`)
-                .setStyle('SECONDARY'),
-        )
-    const genericDeclineButton = new MessageActionRow()
-        .addComponents(
-            new MessageButton()
-                .setCustomId(`${mcusername},${discordID},rulerejectkick`)
-                .setLabel(`${RULE_PHRASE_EMOJI} ${capitalizeFirstLetter(RULE_PHRASE_TEXT)} rule reject AND KICK ${unescapeFormatting(mcusername)}`)
-                .setStyle('DANGER'),
-        )
-    channel.send({ content:`${escapeFormatting(mcusername)} has been flagged as not having mentioned ${RULE_PHRASE_TEXT}. Click the button to ${RULE_PHRASE_TEXT} reject`, components: [ruleViolationButton, genericDeclineButton] })
-}
+process.on('unhandledRejection', error => {
+    console.error(`error time ${new Date().toISOString()}`)
+    console.error('Unhandled promise rejection:', error)
+    if (error == null || !(error instanceof Error)) {
+        console.error(`Error is invalid (jx0032)`)
+        return
+    }
+    debugchannel.send(`Unhandled promise rejection: ${error} \n\n${error.stack}`)
+})
 
-export function postRegularRejectButtons(mcusername: string, discordID: string, channel: DiscordJS.TextBasedChannel) {
-    const badApplicationButton = new MessageActionRow()
-        .addComponents(
-            new MessageButton()
-                .setCustomId(`${mcusername},${discordID},badappreject`)
-                .setLabel(`💩 Reject and kick ${unescapeFormatting(mcusername)} for bad application`)
-                .setStyle('SECONDARY'),
-        )
-    const underAgeButton = new MessageActionRow()
-        .addComponents(
-            new MessageButton()
-                .setCustomId(`${mcusername},${discordID},underagereject`)
-                .setLabel(`🔞 Reject and kick ${unescapeFormatting(mcusername)} for underage application`)
-                .setStyle('SECONDARY'),
-        )
-    const genericButton = new MessageActionRow()
-        .addComponents(
-            new MessageButton()
-                .setCustomId(`${mcusername},${discordID},genericreject`)
-                .setLabel(`👎 Reject and kick ${unescapeFormatting(mcusername)} for no reason`)
-                .setStyle('SECONDARY'),
-        )
-    channel.send({ content:`${escapeFormatting(mcusername)} has recieved enough votes to be rejected. Click a button to reject`, components: [badApplicationButton, underAgeButton, genericButton] })
+client.on('shardError', error => {
+    console.error(`error time ${new Date().toISOString()}`)
+    console.error('A websocket connection encountered an error:', error)
+    debugchannel.send(`A websocket connection encountered an error: ${error} \n\n${error.stack}`)
+})
+
+process.on('uncaughtException', error => {
+    console.error(`error time ${new Date().toISOString()}`)
+    console.error('Unhandled exception:', error)
+    debugchannel.send(`Unhandled exception: ${error} \n\n${error.stack}`)
+})
+
+//post all errors into the log channel
+const originalError = console.error
+console.error = function (...args) {
+    debugchannel.send(`logger.error: ${args.toString()}`)
+
+    // Call the original console.error function to print the error message
+    originalError.apply(console, args)
 }
 
 client.login(process.env.TOKEN)
