@@ -15,4 +15,9 @@ export function setupDatabaseTables(){
         if (err) throw err
         console.log("rolelog table created if not exists")
     })
+
+    con.query('CREATE TABLE IF NOT EXISTS `applicationhistory` (`dcUserId` VARCHAR(20) NOT NULL, `messageId` VARCHAR(20) NOT NULL, `messageTimestamp` VARCHAR(14) NOT NULL, `messageURL` VARCHAR(100) NOT NULL, `mcUsername` VARCHAR(16), `mcUuid` VARCHAR(36), `status` VARCHAR(4), PRIMARY KEY (`dcUserId`,`messageId`))', function (err: any, result: any, fields: any) {
+        if (err) throw err
+        console.log(`applicationHistory table created if not exists`)
+    })
 }

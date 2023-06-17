@@ -4,7 +4,10 @@ import fetch from "node-fetch"
 // given the minecraft username, gets the uuid for that username
 export async function nameToUuid(username: String | null): Promise<string>{
     if (username == null) return ""
-    if (!verifyUsernameInput(username)) throw new Error(`Invalid username entered`)
+    if (!verifyUsernameInput(username)) {
+        console.log(`Invalid username entered (${username}) (jx0038)`)
+        return ""
+    }
     const {
         name,
         id,
@@ -17,7 +20,8 @@ export async function nameToUuid(username: String | null): Promise<string>{
     }
     else if (errorMessage != null){
         console.log(`name to uuid invalid name ${username}`)
-        throw new Error(`No one appears to have this name`)
+        console.log(`No one appears to have this name`)
+        return ""
     }
     else if (id != null) return id
 

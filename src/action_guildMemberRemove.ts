@@ -1,5 +1,4 @@
 import * as DiscordJS from "discord.js"
-import fetch from "node-fetch"
 import {con, DEBUGMODE} from "./index"
 import {Client} from "discord.js"
 import {uuidToUsername} from "./api"

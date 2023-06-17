@@ -348,6 +348,10 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
         await interaction.deferReply({ephemeral: true})
         try{
             const uuid = await nameToUuid(username)
+            if (uuid == "") {
+                await interaction.editReply("No one appears to have this name")
+                return
+            }
             await interaction.editReply({content: `Name: ${username}\nUUID: ${uuid}`})
         }
         catch (err) {

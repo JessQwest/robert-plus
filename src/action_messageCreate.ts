@@ -36,7 +36,8 @@ export async function messageCreate(client: Client, message: DiscordJS.Message){
     await easter_egg_messageCreate(message)
 
     if(message.channelId === APPLICATION_CHANNEL_ID && message.embeds.length >= 1){
-        await topic_application_management.processNewApplication(message)
+        if (message.embeds[0].description != null && message.embeds[0].description.includes("What is your Minecraft IGN?"))
+            await topic_application_management.processNewApplication(message)
     }
 }
 

@@ -8,8 +8,8 @@ import {
     RULE_PHRASE_TEXT,
     staffReactThreshold,
     YES_EMOJI_ID
-} from "./index";
-import {unescapeFormatting} from "./utility";
+} from "./index"
+import {unescapeFormatting} from "./utility"
 import {postRegularRejectButtons, postRuleRejectButtons} from "./zTopic_application_management"
 
 export async function messageReactionAdd(client: Client, reaction: MessageReaction | PartialMessageReaction) {

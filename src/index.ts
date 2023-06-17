@@ -196,24 +196,24 @@ cron.schedule('0,5,10,15,20,25,30 6 * * *', async () => {
 })
 
 process.on('unhandledRejection', error => {
-    console.error(`error time ${new Date().toISOString()}`)
+    console.warn(`error time ${new Date().toISOString()}`)
     console.error('Unhandled promise rejection:', error)
     if (error == null || !(error instanceof Error)) {
-        console.error(`Error is invalid (jx0032)`)
+        console.log(`Error is invalid (jx0032)`)
         return
     }
     debugchannel.send(`Unhandled promise rejection: ${error} \n\n${error.stack}`)
 })
 
 client.on('shardError', error => {
-    console.error(`error time ${new Date().toISOString()}`)
-    console.error('A websocket connection encountered an error:', error)
+    console.warn(`error time ${new Date().toISOString()}`)
+    console.warn('A websocket connection encountered an error:', error)
     debugchannel.send(`A websocket connection encountered an error: ${error} \n\n${error.stack}`)
 })
 
 process.on('uncaughtException', error => {
-    console.error(`error time ${new Date().toISOString()}`)
-    console.error('Unhandled exception:', error)
+    console.warn(`error time ${new Date().toISOString()}`)
+    console.warn('Unhandled exception:', error)
     debugchannel.send(`Unhandled exception: ${error} \n\n${error.stack}`)
 })
 

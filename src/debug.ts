@@ -1,8 +1,10 @@
 import {client, con} from "./index"
-import {getDiscordDisplayName} from "./utility"
+import {getDiscordDisplayName, unescapeFormatting, verifyUsernameInput} from "./utility"
 import {buttonIDSet} from "./action_interactionCreate"
-import {MessageEmbed} from "discord.js"
+import {Application, MessageEmbed, TextChannel} from "discord.js"
 import * as DiscordJS from "discord.js"
+import {changeApplicationIGN, checkApplicationHistory, scanApplication} from "./zTopic_application_management"
+import {nameToUuid} from "./api"
 
 export async function debug_messageCreate(message: DiscordJS.Message) {
     //test function
@@ -13,7 +15,7 @@ export async function debug_messageCreate(message: DiscordJS.Message) {
             return
         }
 
-        user.send(":heart:").then(success =>
+        user.send(":heart:").then(() =>
             console.log("successful message")
         ).catch(error => {
             console.log(error.message)
@@ -21,8 +23,49 @@ export async function debug_messageCreate(message: DiscordJS.Message) {
         await message.react("🧀")
     }
 
-    if (message.author.id === "252818596777033729" && message.channelId === "970336504364818452") {
-        //await message.reply(containsDucks(message.content))
+    // get all the messages in the old text channel for pushing to db
+    if (message.author.id === "252818596777033729" && message.channelId === "970336504364818452" && message.content == "ttx") {
+        //const channel = client.channels.cache.get("743877003538727023") // august20-april21
+        //const channel = client.channels.cache.get("829119466763583508") // april21-october21
+        const channel = client.channels.cache.get("908855513163399268") // october21-current
+        if (channel == null) return
+        if (!(channel instanceof TextChannel)) return
+        if (channel.messages == null) return
+        let messages: DiscordJS.Message[] = [];
+
+        // Create message pointer
+        let message = await channel.messages
+            .fetch({ limit: 1 })
+            .then(messagePage => (messagePage.size === 1 ? messagePage.at(0) : null));
+
+        while (message) {
+            await channel.messages
+                .fetch({ limit: 100, before: message.id })
+                .then(messagePage => {
+                    messagePage.forEach(msg => messages.push(msg));
+
+                    // Update our message pointer to be the last message on the page of messages
+                    message = 0 < messagePage.size ? messagePage.at(messagePage.size - 1) : null;
+                });
+        }
+
+        let applicationInsertStatement: string = ""
+        await messages.forEach(message => {
+            // if an embed (app posted by bot) attempt to scan for user information
+            if (message.embeds.length >= 1) {
+                if (message.embeds[0] == null) {
+                    console.error("jx0040")
+                }
+                scanApplication(message.embeds[0]).then(async app => {
+                    let playerIgn = unescapeFormatting(app.ign)
+                    if (!verifyUsernameInput(playerIgn)) playerIgn = 'null'
+                    else playerIgn = `'${playerIgn}'`
+                    applicationInsertStatement += (`insert into applicationhistory(dcUserId, messageId, messageTimestamp, messageURL, mcUsername) values ('${app.discordID}', '${message.id}', '${message.createdTimestamp}', '${message.url}', ${playerIgn});\n`)
+                })
+            }
+            else applicationInsertStatement += (`insert into applicationhistory(dcUserId, messageId, messageTimestamp, messageURL) values ('${message.author.id}', '${message.id}', '${message.createdTimestamp}', '${message.url}');\n`)
+        })
+        console.log(applicationInsertStatement)
     }
 
     if (message.content === "dbreset" && message.author.id === "252818596777033729" && message.channelId === "970336504364818452"){
@@ -83,8 +126,28 @@ export async function debug_messageCreate(message: DiscordJS.Message) {
                 "\n" +
                 "Include any additional information or questions here:\n" +
                 "( ’-’)")
-            .setFooter("Applicant: _Jacques_#8805\n" +
-                "ID: 629050148663721994")
+            .setFooter({text: "Applicant: _Jacques_#8805\n" +
+                "ID: 252818596777033729"})
         message.channel.send({embeds: [whitelistedEmbed]})
+    }
+
+    // if replying to an application with an question mark, pull the history
+    if (message.content.at(0) == "?" && message.author.id == "252818596777033729"){
+        let applicationHistory: MessageEmbed[];
+        try {
+            applicationHistory = await checkApplicationHistory(message.content.slice(1),message.content.slice(1))
+            if (applicationHistory != null && applicationHistory.length >= 1 && applicationHistory[0].description != null && applicationHistory[0].description.length >= 1) {
+                try {
+                    console.error(`failed to post application history: ${applicationHistory[0].description}`)
+                    message.channel.send({content: "Application History", embeds: applicationHistory})
+                }
+                catch (e) {
+                    console.error(`failed to post application history: ${applicationHistory[0].description}`)
+                }
+            }
+            else message.channel.send({content: "No known application history"})
+        } catch (error) {
+            console.error('Error retrieving application history:', error)
+        }
     }
 }
