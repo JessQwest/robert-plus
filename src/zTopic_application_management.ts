@@ -1,5 +1,6 @@
 import * as DiscordJS from "discord.js"
 import {
+    Message,
     MessageActionRow,
     MessageButton,
     MessageEmbed,
@@ -67,17 +68,28 @@ export async function processNewApplication(message: DiscordJS.Message) {
         postRuleRejectButtons(application.ign,application.discordID,applicationTextChannel)
     }
 
+    await postApplicationHistory(message, applicationChannel, application.discordID, application.ign)
+
+    await message.react("🇵")
+}
+
+export async function postApplicationHistory(message: Message, messageChannel: TextChannel, discordId: string, mcUsername = '') {
     let applicationHistory: MessageEmbed[];
+    let username: String
     try {
-        applicationHistory = await checkApplicationHistory(application.discordID, application.ign)
-        if (applicationHistory != null && applicationHistory.length >= 1) {
-            applicationChannel.send({embeds: applicationHistory})
+        applicationHistory = await checkApplicationHistory(discordId,mcUsername)
+        if (applicationHistory != null && applicationHistory.length >= 1 && applicationHistory[0].description != null && applicationHistory[0].description.length >= 1) {
+            try {
+                messageChannel.send({content: "Application History", embeds: applicationHistory})
+            }
+            catch (e) {
+                console.error(`failed to post application history: ${applicationHistory[0].description}`)
+            }
         }
+        else messageChannel.send({content: "No known prior application history"})
     } catch (error) {
         console.error('Error retrieving application history:', error)
     }
-
-    await message.react("🇵")
 }
 
 export async function scanApplication(receivedEmbed: MessageEmbed): Promise<Application> {
@@ -175,13 +187,15 @@ export function checkApplicationHistory(dcUserId: string, mcUsername = ''): Prom
 
         console.log(`SELECT * FROM applicationhistory WHERE dcUserId = '${dcUserId}' or mcUsername = '${mcUsername}' or mcUuid = '${mcUuid}'`)
         con.query(
-            'SELECT * FROM applicationhistory WHERE dcUserId = ? or mcUsername = ? or mcUuid = ?',
+            'SELECT * FROM applicationhistory WHERE dcUserId = ? or mcUsername = ? or mcUuid = ? ORDER BY messageTimestamp DESC',
             [dcUserId, mcUsername, mcUuid],
             function (err: any, result: any, fields: any) {
                 if (err) {
                     reject(err)
                     return
                 }
+
+                let username: String = ""
 
                 for (var sqlItem of result) {
                     var sqlDcUserId = sqlItem['dcUserId']
@@ -190,6 +204,7 @@ export function checkApplicationHistory(dcUserId: string, mcUsername = ''): Prom
                     var messageTimestamp = sqlItem['messageTimestamp'].slice(0, -3)
                     var messageURL = sqlItem['messageURL']
 
+                    // remove nulls to check for errors
                     if (dcUserId == null) dcUserId = ""
                     if (mcUuid == null) mcUuid = ""
                     if (mcUsername == null) mcUsername = ""
@@ -197,6 +212,10 @@ export function checkApplicationHistory(dcUserId: string, mcUsername = ''): Prom
                     if (sqlMcUsername == null) sqlMcUsername = ""
                     if (sqlMcUuid == null) sqlMcUuid = ""
 
+                    // save the most recent recorded username
+                    if (username == "" && mcUsername != "") username = mcUsername
+
+                    // establish what is matching
                     var sharingString = ""
                     if (dcUserId != "" && dcUserId.toLowerCase() === sqlDcUserId.toLowerCase()) {
                         sharingString += 'Discord account';
@@ -223,7 +242,8 @@ export function checkApplicationHistory(dcUserId: string, mcUsername = ''): Prom
                     answerString += `The same ${sharingString} detected <t:${messageTimestamp}:R> on <t:${messageTimestamp}:f> ${messageURL}\n`
                 }
 
-                returnMessage.push(new MessageEmbed().setDescription(answerString))
+                if (answerString.length >= 1) returnMessage.push(new MessageEmbed().setDescription(answerString))
+                if (username != "" && returnMessage.length >= 1) returnMessage.at(0)?.setTitle(`Player username: ${username}`)
                 resolve(returnMessage)
             }
         )

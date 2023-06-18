@@ -5,7 +5,7 @@ var jacques : string = "252818596777033729"
 var schrute : string = "699331874408890378"
 //every day at 7am
 export async function sleepyTime() {
-    console.log('sleepytime task')
+    console.log(`sleepytime task @ ${new Date().toISOString()}`)
     let holidayhome = await client.guilds.fetch("885542685090410586")
     let juser = await holidayhome.members.fetch(jacques)
     let suser = await holidayhome.members.fetch(schrute)

@@ -3,7 +3,12 @@ import {getDiscordDisplayName, unescapeFormatting, verifyUsernameInput} from "./
 import {buttonIDSet} from "./action_interactionCreate"
 import {Application, MessageEmbed, TextChannel} from "discord.js"
 import * as DiscordJS from "discord.js"
-import {changeApplicationIGN, checkApplicationHistory, scanApplication} from "./zTopic_application_management"
+import {
+    changeApplicationIGN,
+    checkApplicationHistory,
+    postApplicationHistory,
+    scanApplication
+} from "./zTopic_application_management"
 import {nameToUuid} from "./api"
 
 export async function debug_messageCreate(message: DiscordJS.Message) {
@@ -132,22 +137,7 @@ export async function debug_messageCreate(message: DiscordJS.Message) {
     }
 
     // if replying to an application with an question mark, pull the history
-    if (message.content.at(0) == "?" && message.author.id == "252818596777033729"){
-        let applicationHistory: MessageEmbed[];
-        try {
-            applicationHistory = await checkApplicationHistory(message.content.slice(1),message.content.slice(1))
-            if (applicationHistory != null && applicationHistory.length >= 1 && applicationHistory[0].description != null && applicationHistory[0].description.length >= 1) {
-                try {
-                    console.error(`failed to post application history: ${applicationHistory[0].description}`)
-                    message.channel.send({content: "Application History", embeds: applicationHistory})
-                }
-                catch (e) {
-                    console.error(`failed to post application history: ${applicationHistory[0].description}`)
-                }
-            }
-            else message.channel.send({content: "No known application history"})
-        } catch (error) {
-            console.error('Error retrieving application history:', error)
-        }
+    if (message.content.at(0) == "?" && (message.author.id == "252818596777033729" || message.channelId == "805296027241676820")){
+        if (message.channel instanceof TextChannel) await postApplicationHistory(message, message.channel, message.content.slice(1), message.content.slice(1))
     }
 }
