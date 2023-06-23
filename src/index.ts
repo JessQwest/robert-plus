@@ -50,6 +50,7 @@ export const REDSTONE_EMOJI: string = `<:redstone:${REDSTONE_EMOJI_ID}>`
 
 // channel constants
 export const ALERT_CHANNEL = DEBUGMODE ? "970336504364818452" : "1008083728863596716"
+export const BOT_INFO_CHANNEL_ID = "1121768749054316574"
 export const BOT_LOG_CHANNEL_ID = "970103685810118796"
 export const MESSAGES_TO_ROBERT_CHANNEL_ID = "970115159781683290"
 export const APPLICATION_NOTIFICATION_CHANNEL_ID = DEBUGMODE ? "970336504364818452" : "829119465718284358"
@@ -70,11 +71,13 @@ else{
 
 // server constants
 export const APPLICATION_SERVER_ID = "743616108288016464"
+export const MAIN_SERVER_ID = "706923004285812849"
 
 // other constants
 // second number needs to be one greater than the majority of staff (for 5 staff, majority is 3, so this value needs to be 4)
 export const staffReactThreshold = DEBUGMODE ? 2 : 4
 export const ROBERT_USER_ID = "969760796278157384"
+export const MUSEUM_ROLE_ID = "1121767435159212112"
 
 //CONSTANTS END
 
@@ -185,8 +188,8 @@ client.on('messageCreate', async (message) => {
     await messageCreate(client, message)
 })
 
-// daily housekeep at 1am
-cron.schedule('0 1 * * *', async () => {
+// daily housekeep at 7am gmt hopefully
+cron.schedule('0 7 * * *', async () => { // 0 7 * * * or * * * * *
     await scheduled_jobs.housekeepTask()
 })
 

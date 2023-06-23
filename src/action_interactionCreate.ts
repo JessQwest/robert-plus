@@ -2,7 +2,16 @@ import {ButtonInteraction, Client, GuildMember, Interaction, MessageEmbed} from 
 import {escapeFormatting, getDiscordDisplayName, verifyUsernameInput} from "./utility"
 import * as DiscordJS from "discord.js"
 import fetch from "node-fetch"
-import {ALERT_CHANNEL, con, RULE_PHRASE_TEXT, SERVER_NAME, YES_EMOJI} from "./index"
+import {
+    ALERT_CHANNEL,
+    BOT_INFO_CHANNEL_ID,
+    BOT_LOG_CHANNEL_ID,
+    con,
+    MUSEUM_ROLE_ID,
+    RULE_PHRASE_TEXT,
+    SERVER_NAME,
+    YES_EMOJI
+} from "./index"
 
 // @ts-ignore
 import { v4 as uuidv4 } from 'uuid';
@@ -257,6 +266,21 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
             content: "Staff have been silently notified of action in this channel.",
             ephemeral: true
         })
+    }
+
+    if (commandName === "museum"){
+        if (interaction.guild == null) return
+        interaction.guild.roles.fetch(MUSEUM_ROLE_ID).then(role => {
+            // @ts-ignore
+            client.channels.cache.get(BOT_INFO_CHANNEL_ID).send(`${user.username} has requested the Museum role`)
+            // @ts-ignore
+            interaction.member.roles.add(role)
+            interaction.reply({
+                content: "You now have a day pass to the DSMP Museum!",
+                ephemeral: true
+            })
+        })
+        return
     }
 
     if (commandName === "getdiscordname"){

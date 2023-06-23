@@ -1,4 +1,11 @@
-import {ALERT_CHANNEL, APPLICATION_NOTIFICATION_CHANNEL_ID, APPLICATION_SERVER_ID, client, con} from "./index"
+import {
+    ALERT_CHANNEL,
+    APPLICATION_NOTIFICATION_CHANNEL_ID,
+    APPLICATION_SERVER_ID, BOT_INFO_CHANNEL_ID, BOT_LOG_CHANNEL_ID,
+    client,
+    con,
+    MAIN_SERVER_ID, MUSEUM_ROLE_ID
+} from "./index"
 import {TextChannel} from "discord.js"
 
 var jacques : string = "252818596777033729"
@@ -15,6 +22,7 @@ export async function sleepyTime() {
 
 export async function housekeepTask() {
     await removeApplicationMembers()
+    await removeMuseumDayPasses()
 }
 
 const millsecondsInDay = 1000 * 60 * 60 * 27
@@ -35,6 +43,24 @@ async function removeApplicationMembers() {
                     member.kick(`${member.user.username} joined ${daysJoined} Days ago and is being kicked for inactivity`)
                 }
             }
+        }
+    )
+}
+
+async function removeMuseumDayPasses() {
+    var infochannel = await client.channels.cache.get(BOT_INFO_CHANNEL_ID)
+    if (infochannel == null || !(infochannel instanceof TextChannel)) return
+    const list = client.guilds.cache.get(MAIN_SERVER_ID)
+    if (list == null) return
+    list.members.cache.forEach(member => {
+        // if member has museum day pass role
+        if (member.roles.cache.has(MUSEUM_ROLE_ID)) {
+            //remove the role
+            member.roles.remove(MUSEUM_ROLE_ID)
+            // and log it in bot info
+            // @ts-ignore
+            infochannel.send(`${member.user.username} has had their museum day pass removed`)
+        }
         }
     )
 }

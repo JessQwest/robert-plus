@@ -38,6 +38,11 @@ export function registerCommands(){
     })
 
     commands?.create({
+        name: 'museum',
+        description: "Grants you a day pass to the DSMP Discord Museum"
+    })
+
+    commands?.create({
         name: 'nametouuid',
         description: "Get the UUID of a username",
         options: [{
