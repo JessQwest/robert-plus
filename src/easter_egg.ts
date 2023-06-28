@@ -56,11 +56,11 @@ export async function easter_egg_messageCreate(message: DiscordJS.Message) {
                 replyMessage = "AAAAAAAAAAA"
                 break
             case 7:
-                message.react("<:A2:926172226204626976>")
+                await message.react("<:A_:926170429486411796>")
                 return
         }
         if (replyMessage == "CHEESE") return
-        message.reply({
+        await message.reply({
             content: replyMessage
         })
         return
@@ -69,12 +69,12 @@ export async function easter_egg_messageCreate(message: DiscordJS.Message) {
     // if someone says azurelanternlit
     if (message.content === "azurelanternlit" && message.author != client.user){
         if(message.author.id === "749814178595864678"){
-            message.reply({
+            await message.reply({
                 content: "ok"
             })
         }
         else {
-            message.reply({
+            await message.reply({
                 content: "azurelanternlit"
             })
         }
@@ -82,7 +82,7 @@ export async function easter_egg_messageCreate(message: DiscordJS.Message) {
 
     // if someone says my name is walter hartwell white
     if (message.content.toLowerCase() == "my name is walter hartwell white"){
-        message.reply({
+        await message.reply({
             content: "I live at 308 negra arroyo lane albequerque new mexico 87104"
         })
     }
