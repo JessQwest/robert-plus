@@ -16,13 +16,27 @@ import {
     unescapeFormatting,
     verifyUsernameInput
 } from "./utility"
-import {APPLICATION_CHANNEL_ID, client, con, NO_EMOJI, RULE_PHRASE_EMOJI, RULE_PHRASE_TEXT, YES_EMOJI} from "./index"
+import {
+    APPLICATION_CHANNEL_ID, APPLICATION_NOTIFICATION_CHANNEL_ID,
+    APPLICATION_VOTING_CHANNEL_ID,
+    client,
+    con,
+    NO_EMOJI,
+    RULE_PHRASE_EMOJI,
+    RULE_PHRASE_TEXT,
+    YES_EMOJI
+} from "./index"
 import {nameToUuid} from "./api"
 
 export async function processNewApplication(message: DiscordJS.Message) {
-    const applicationChannel = client.channels.cache.get(APPLICATION_CHANNEL_ID)
+    const applicationChannel = client.channels.cache.get(APPLICATION_VOTING_CHANNEL_ID) //channel to vote in
+    const applicationNotificationChannel = client.channels.cache.get(APPLICATION_NOTIFICATION_CHANNEL_ID) //channel to notify basic app info
     if (applicationChannel == null || !(applicationChannel instanceof TextChannel)) {
-        console.log(`${APPLICATION_CHANNEL_ID} is not a valid text channel (jx0011)`)
+        console.log(`${APPLICATION_CHANNEL_ID} is not a valid text channel for application information (jx0011)`)
+        return
+    }
+    if (applicationNotificationChannel == null || !(applicationNotificationChannel instanceof TextChannel)) {
+        console.log(`${APPLICATION_NOTIFICATION_CHANNEL_ID} is not a valid text channel for application summary (jx0041)`)
         return
     }
     const applicationTextChannel: TextBasedChannel = applicationChannel as DiscordJS.TextChannel
@@ -58,7 +72,7 @@ export async function processNewApplication(message: DiscordJS.Message) {
             `Referral: ${application.referral}\n` +
             `${capitalizeFirstLetter(RULE_PHRASE_TEXT)} Detected: ${rulePhraseDetectedString}\n`)
 
-    applicationChannel.send({embeds: [basicApplicationEmbed]})
+    applicationNotificationChannel.send({embeds: [basicApplicationEmbed]})
 
     if (!verifyUsernameInput(application.ign)){
         applicationChannel.send("This IGN doesnt look quite right. Reply to the application message with !(ign) if it is wrong")
