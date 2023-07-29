@@ -36,6 +36,7 @@ console.log("Applying constants")
 
 // text constants
 export const SERVER_NAME = "Divergent SMP"
+export const SERVER_APPLICATION_URL = "https://apply.divergentsmp.net/"
 export const RULE_PHRASE_EMOJI: string = "🦆"
 export const RULE_PHRASE_TEXT: string = "duck"
 export const RULE_MATCH_STRINGS = ["duck","quack",":duck:","🦆"]
@@ -49,20 +50,24 @@ export const REDSTONE_EMOJI_ID: string = "868669449010569247"
 export const REDSTONE_EMOJI: string = `<:redstone:${REDSTONE_EMOJI_ID}>`
 
 // channel constants
-export const ALERT_CHANNEL = DEBUGMODE ? "970336504364818452" : "1008083728863596716"
+export const DEBUG_CHANNEL_ID = "970336504364818452"
+
+export const ALERT_CHANNEL = DEBUGMODE ? DEBUG_CHANNEL_ID : "1008083728863596716"
 export const BOT_INFO_CHANNEL_ID = "1121768749054316574"
 export const BOT_LOG_CHANNEL_ID = "970103685810118796"
+export const STAFF_BOT_LOG_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : "800925944399265812"
 export const MESSAGES_TO_ROBERT_CHANNEL_ID = "970115159781683290"
-export const APPLICATION_NOTIFICATION_CHANNEL_ID = DEBUGMODE ? "970336504364818452" : "829119465718284358"
+export const APPLICATION_NOTIFICATION_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : "829119465718284358"
 export const MAIN_ANNOUNCEMENT_CHANNEL = DEBUGMODE ? "772844397020184579" : "706923005132931135"
-export const APPLICATION_CHANNEL_ID = DEBUGMODE ? "970336504364818452" : "908855513163399268" // channel where applications are posted
-export const APPLICATION_VOTING_CHANNEL_ID = DEBUGMODE ? "970336504364818452" : "805296027241676820" // channel where applications summaries are posted and voted on
+export const APPLICATION_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : "908855513163399268" // channel where applications are posted
+export const APPLICATION_VOTING_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : "805296027241676820" // channel where applications summaries are posted and voted on
+export const ANNOUNCEMENT_DISCUSSION_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : "706923005493903367" // for posting birthday messages
 
 var channelIDtoPostApplications: string = ""
 var channelIDtoPostApplicationNotification: string = ""
 if (DEBUGMODE){
-    channelIDtoPostApplications = "970336504364818452"
-    channelIDtoPostApplicationNotification = "970336504364818452"
+    channelIDtoPostApplications = DEBUG_CHANNEL_ID
+    channelIDtoPostApplicationNotification = DEBUG_CHANNEL_ID
 }
 else{
     channelIDtoPostApplications = "805296027241676820"
@@ -78,6 +83,7 @@ export const MAIN_SERVER_ID = "706923004285812849"
 export const staffReactThreshold = DEBUGMODE ? 2 : 4
 export const ROBERT_USER_ID = "969760796278157384"
 export const MUSEUM_ROLE_ID = "1121767435159212112"
+export const BIRTHDAY_ROLE_ID = "801826957041860638"
 
 //CONSTANTS END
 
@@ -114,7 +120,7 @@ export const con = mysql.createPool({
     database: dbDatabase
 })
 
-console.log(`Attempting to create SQL connection to db ${lpDatabase} with ${lpHost}:${lpPort} ${lpUser}/${lpPassword}`)
+console.log(`Attempting to create SQL connection to luckperms db ${lpDatabase} with ${lpHost}:${lpPort} ${lpUser}/${lpPassword}`)
 export const lpcon = mysql.createPool({
     host: lpHost,
     port: lpPort,

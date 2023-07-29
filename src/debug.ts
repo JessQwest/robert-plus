@@ -1,4 +1,4 @@
-import {client, con} from "./index"
+import {client, con, DEBUG_CHANNEL_ID, SERVER_NAME} from "./index"
 import {getDiscordDisplayName, unescapeFormatting, verifyUsernameInput} from "./utility"
 import {buttonIDSet} from "./action_interactionCreate"
 import {Application, MessageEmbed, TextChannel} from "discord.js"
@@ -13,7 +13,7 @@ import {nameToUuid} from "./api"
 
 export async function debug_messageCreate(message: DiscordJS.Message) {
     //test function
-    if (message.content.toLowerCase().includes("cheese") && message.channelId == "970336504364818452"){
+    if (message.content.toLowerCase().includes("cheese") && message.channelId == DEBUG_CHANNEL_ID){
         const user = await client.users.fetch("252818596777033729")
         if (typeof user == 'undefined'){
             console.log("idk that channel")
@@ -29,29 +29,29 @@ export async function debug_messageCreate(message: DiscordJS.Message) {
     }
 
     // get all the messages in the old text channel for pushing to db
-    if (message.author.id === "252818596777033729" && message.channelId === "970336504364818452" && message.content == "ttx") {
+    if (message.author.id === "252818596777033729" && message.channelId === DEBUG_CHANNEL_ID && message.content == "ttx") {
         //const channel = client.channels.cache.get("743877003538727023") // august20-april21
         //const channel = client.channels.cache.get("829119466763583508") // april21-october21
         const channel = client.channels.cache.get("908855513163399268") // october21-current
         if (channel == null) return
         if (!(channel instanceof TextChannel)) return
         if (channel.messages == null) return
-        let messages: DiscordJS.Message[] = [];
+        let messages: DiscordJS.Message[] = []
 
         // Create message pointer
         let message = await channel.messages
             .fetch({ limit: 1 })
-            .then(messagePage => (messagePage.size === 1 ? messagePage.at(0) : null));
+            .then(messagePage => (messagePage.size === 1 ? messagePage.at(0) : null))
 
         while (message) {
             await channel.messages
                 .fetch({ limit: 100, before: message.id })
                 .then(messagePage => {
-                    messagePage.forEach(msg => messages.push(msg));
+                    messagePage.forEach(msg => messages.push(msg))
 
                     // Update our message pointer to be the last message on the page of messages
-                    message = 0 < messagePage.size ? messagePage.at(messagePage.size - 1) : null;
-                });
+                    message = 0 < messagePage.size ? messagePage.at(messagePage.size - 1) : null
+                })
         }
 
         let applicationInsertStatement: string = ""
@@ -73,11 +73,11 @@ export async function debug_messageCreate(message: DiscordJS.Message) {
         console.log(applicationInsertStatement)
     }
 
-    if (message.content === "dbreset" && message.author.id === "252818596777033729" && message.channelId === "970336504364818452"){
+    if (message.content === "dbreset" && message.author.id === "252818596777033729" && message.channelId === DEBUG_CHANNEL_ID){
         con.reset()
     }
 
-    if (message.content === "debug" && message.author.id === "252818596777033729" && message.channelId === "970336504364818452") {
+    if (message.content === "debug" && message.author.id === "252818596777033729" && message.channelId === DEBUG_CHANNEL_ID) {
         console.log("DEBUG COMMAND")
         var discordUser
         var discordUsername = "Unknown user"
@@ -99,11 +99,11 @@ export async function debug_messageCreate(message: DiscordJS.Message) {
         await message.reply("After: " + Array.from(buttonIDSet.values()).toString())
     }
 
-    if (message.content === "wl" && message.author.id === "252818596777033729" && message.channelId === "970336504364818452"){
+    if (message.content === "wl" && message.author.id === "252818596777033729" && message.channelId === DEBUG_CHANNEL_ID){
         message.channel.send("WL TRIGGER")
         const whitelistedEmbed = new MessageEmbed()
             .setColor("#54fbfb")
-            .setTitle("New: Divergent SMP Application")
+            .setTitle(`New: ${SERVER_NAME} Application`)
             .setDescription("What is your Minecraft IGN?:\n" +
                 "_notch_\n" +
                 "\n" +

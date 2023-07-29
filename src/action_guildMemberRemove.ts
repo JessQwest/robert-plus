@@ -1,5 +1,5 @@
 import * as DiscordJS from "discord.js"
-import {con, DEBUGMODE} from "./index"
+import {con, DEBUG_CHANNEL_ID, DEBUGMODE} from "./index"
 import {Client} from "discord.js"
 import {uuidToUsername} from "./api"
 
@@ -11,7 +11,7 @@ export function guildMemberRemove(client: Client, member: DiscordJS.GuildMember 
     var guildToCheck: string = "706923004285812849"
     if (DEBUGMODE){
         guildToCheck = "772844397020184576"
-        channelToLog = "970336504364818452"
+        channelToLog = DEBUG_CHANNEL_ID
     }
     console.log(`Member left guild with ID: ${member.guild.id}. ID to monitor: ${guildToCheck}`)
     if(member.guild.id == guildToCheck){

@@ -5,10 +5,9 @@ import fetch from "node-fetch"
 import {
     ALERT_CHANNEL,
     BOT_INFO_CHANNEL_ID,
-    BOT_LOG_CHANNEL_ID,
     con,
     MUSEUM_ROLE_ID,
-    RULE_PHRASE_TEXT,
+    RULE_PHRASE_TEXT, SERVER_APPLICATION_URL,
     SERVER_NAME,
     YES_EMOJI
 } from "./index"
@@ -680,8 +679,8 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
                         const discordUser : DiscordJS.User = await client.users.fetch(dcId)
 
                         let content = `Hi, I'm Robert, the robotic assistant for ${SERVER_NAME}. \n` +
-                            "You have not joined the server for a while, and therefore you have been kicked from the server due to inactivity\n" +
-                            "If you wish to rejoin, you will need to re-apply again at https://apply.divergentsmp.net/"
+                            `You have not joined the server for a while, and therefore you have been kicked from the server due to inactivity\n` +
+                            `If you wish to rejoin, you will need to re-apply again at ${SERVER_APPLICATION_URL}`
                         messageAndKick(interaction, escapeFormatting(mcUsername), interaction.user.username, discordUser, content)
                         await interaction.editReply({content: `${interaction.user.username} kicked ${escapeFormatting(mcUsername)} for inactivity`, components: []})
                     }
