@@ -55,12 +55,6 @@ async function userRoleRemoved(oldMember: GuildMember | PartialGuildMember, newM
     oldMember.roles.cache.forEach(role => {
         if (!newMember.roles.cache.has(role.id)) {
             console.log("Role Removed", role.id)
-            // send happy birthday message if applicable
-            if (role.id == `${BIRTHDAY_ROLE_ID}`) {
-                console.log(`Saying happy birthday to ${newMember.user.username}`)
-                const bdayChannel = client.channels.cache.get(ANNOUNCEMENT_DISCUSSION_CHANNEL_ID) as TextChannel
-                bdayChannel.send(`Happy Birthday ${newMember.displayName }/${newMember.user.username}!`)
-            }
             removeMinecraftUserRole(role, newMember, mcUuid)
         }
     })
@@ -70,6 +64,12 @@ async function userRoleAdded(oldMember: GuildMember | PartialGuildMember, newMem
     newMember.roles.cache.forEach(role => {
         if (!oldMember.roles.cache.has(role.id)) {
             console.log("Role Added", role.id)
+            // send happy birthday message if applicable
+            if (role.id == `${BIRTHDAY_ROLE_ID}`) {
+                console.log(`Saying happy birthday to ${newMember.user.username}`)
+                const bdayChannel = client.channels.cache.get(ANNOUNCEMENT_DISCUSSION_CHANNEL_ID) as TextChannel
+                bdayChannel.send(`Happy Birthday ${newMember.displayName }/${newMember.user.username}!`)
+            }
             addMinecraftUserRole(role, newMember, mcUuid)
         }
     })
