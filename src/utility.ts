@@ -48,3 +48,21 @@ export function addDashesToUuid(uuid: string){
     }
     return uuid.slice(0,8) + "-" + uuid.slice(8,12) + "-" + uuid.slice(12,16) + "-" + uuid.slice(16,20) + "-" + uuid.slice(20)
 }
+
+export function countCharacterChanges(str1: string, str2: string): number {
+    if (str1 === str2) return 0
+
+    const len1 = str1.length
+    const len2 = str2.length
+    const maxLength = Math.max(len1, len2)
+
+    let changes = Math.abs(len1 - len2)
+
+    for (let i = 0; i < maxLength; i++) {
+        if (str1[i] !== str2[i]) {
+            changes++
+        }
+    }
+
+    return changes
+}

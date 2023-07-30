@@ -1,4 +1,4 @@
-import {addDashesToUuid, getDiscordDisplayName} from "./utility"
+import {addDashesToUuid, countCharacterChanges, getDiscordDisplayName} from "./utility"
 import {
     ANNOUNCEMENT_DISCUSSION_CHANNEL_ID,
     BIRTHDAY_ROLE_ID,
@@ -68,7 +68,10 @@ async function userRoleAdded(oldMember: GuildMember | PartialGuildMember, newMem
             if (role.id == `${BIRTHDAY_ROLE_ID}`) {
                 console.log(`Saying happy birthday to ${newMember.user.username}`)
                 const bdayChannel = client.channels.cache.get(ANNOUNCEMENT_DISCUSSION_CHANNEL_ID) as TextChannel
-                bdayChannel.send(`Happy Birthday ${newMember.displayName }/${newMember.user.username}!`)
+                const nickname = newMember.displayName
+                const username = newMember.user.username
+                const bdayName = countCharacterChanges(nickname, username) >= 4 ? `${nickname}/${username}` : nickname
+                bdayChannel.send(`Happy Birthday ${bdayName}!`)
             }
             addMinecraftUserRole(role, newMember, mcUuid)
         }
