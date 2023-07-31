@@ -12,7 +12,7 @@ import {discordIdToMinecraftUuid} from "./api"
 
 // ranks - [discordRoleId, nameOfRank, allowsColorChange]
 // note that netherite rank is there twice, once for standard netherite and once for netherite giftee
-const ranks = [[718434756496326657, "gold", 0], [720848078264991765, "emerald", 0], [710713981186211870, "diamond", 1], [804897967374860288, "netherite", 1], [1076240598232739854, "netherite", 1], [801826957041860638, "birthday", 0]]
+const ranks = [["718434756496326657", "gold", 0], ["720848078264991765", "emerald", 0], ["710713981186211870", "diamond", 1], ["804897967374860288", "netherite", 1], ["1076240598232739854", "netherite", 1], ["801826957041860638", "birthday", 0]]
 const colors = [
     "905473389592993882",
     "905475025786785822",
@@ -160,18 +160,22 @@ async function removeMinecraftUserRole(role: Role, newMember: GuildMember, mcUui
 }
 
 // check if the member has a color role but no valid rank to go with that role
-async function checkUserColor(member: GuildMember) {
-    const channel = await client.channels.cache.get(STAFF_BOT_LOG_CHANNEL_ID)
+function checkUserColor(member: GuildMember) {
+    const channel = client.channels.cache.get(STAFF_BOT_LOG_CHANNEL_ID)
 
     // get all the ranks that allow color changing into a string array
-    const ranksWithColor: string[] = ranks.filter(rank => rank[2] === 1).map(rank => rank[0].toString())
+    const ranksWithColor = ranks.filter(item => item[2] === 1).map(item => item[0])
+    let memberHasValidRank: boolean = false
     // if the member has a rank with color changing then return
-    for (const rank in ranksWithColor) {
-        if (member.roles.cache.has(rank)) return
-    }
+    member.roles.cache.forEach(role => {
+        if (ranksWithColor.includes(role.id)) {
+            console.log(`user has valid donator role so not removing color`)
+            memberHasValidRank = true
+        }
+    })
     // if any colors are found, remove them
     member.roles.cache.forEach(role => {
-        if (colors.includes(role.id)) {
+        if (colors.includes(role.id) && !memberHasValidRank) {
             console.log(`non donator has role ${role.name}`)
             if (channel != undefined && channel instanceof TextChannel)
                 member.roles.remove(role)
