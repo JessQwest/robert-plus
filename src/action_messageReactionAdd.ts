@@ -54,7 +54,11 @@ export async function messageReactionAdd(client: Client, reaction: MessageReacti
     }
 
     const mcusername = usernameBlockText.slice(5, -8)
-    const discordID: string = reaction.message.embeds[0].footer.text
+    const footerString: string = reaction.message.embeds[0].footer.text
+    const footerParts = footerString.split(',')
+
+    const discordID: string = footerParts[0] ?? "0"
+    const applicationMessageID: string = footerParts[1] ?? "0"
 
     const redstoneReactionCache = reactionCache.get(REDSTONE_EMOJI_ID) as DiscordJS.MessageReaction
     if (redstoneReactionCache != undefined && redstoneReactionCache.count != null && redstoneReactionCache.count == 1) {
@@ -78,7 +82,7 @@ export async function messageReactionAdd(client: Client, reaction: MessageReacti
             const acceptButton = new MessageActionRow()
                 .addComponents(
                     new MessageButton()
-                        .setCustomId(`${unescapeFormatting(mcusername)},${discordID},accept`)
+                        .setCustomId(`${unescapeFormatting(mcusername)},${discordID},accept,${applicationMessageID}`)
                         .setLabel(`Accept ${unescapeFormatting(mcusername)}`)
                         .setStyle('PRIMARY'),
                 )
@@ -102,12 +106,12 @@ export async function messageReactionAdd(client: Client, reaction: MessageReacti
         if (noVotes.count >= staffReactThreshold) {
             console.log(`${noVotes.count} exceeds threshold of ${staffReactThreshold}, posting new decline button`)
 
-            postRegularRejectButtons(unescapeFormatting(mcusername), discordID, reaction.message.channel)
+            postRegularRejectButtons(unescapeFormatting(mcusername), discordID, reaction.message.channel, applicationMessageID)
             await reaction.message.react(REDSTONE_EMOJI)
         }
     } else if (reaction.emoji.toString() == RULE_PHRASE_EMOJI) {
         console.log(`${RULE_PHRASE_TEXT} has been reacted to a server application`)
         await reaction.message.react(REDSTONE_EMOJI)
-        postRuleRejectButtons(unescapeFormatting(mcusername), discordID, reaction.message.channel)
+        postRuleRejectButtons(unescapeFormatting(mcusername), discordID, reaction.message.channel, reaction.message.id)
     }
 }

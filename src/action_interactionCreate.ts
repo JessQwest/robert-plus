@@ -3,10 +3,10 @@ import {escapeFormatting, getDiscordDisplayName, verifyUsernameInput} from "./ut
 import * as DiscordJS from "discord.js"
 import fetch from "node-fetch"
 import {
-    ALERT_CHANNEL,
+    ALERT_CHANNEL, APPLICATION_CHANNEL_ID,
     BOT_INFO_CHANNEL_ID,
     con,
-    MUSEUM_ROLE_ID,
+    MUSEUM_ROLE_ID, NO_EMOJI, RULE_PHRASE_EMOJI,
     RULE_PHRASE_TEXT, SERVER_APPLICATION_URL,
     SERVER_NAME,
     YES_EMOJI
@@ -57,9 +57,9 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
     const escapedMcUsername = escapeFormatting(mcUsername)
     console.log(`Collected mcUsername from customId, unescaped: ${mcUsername} & escaped ${escapedMcUsername}`)
     const dcId = splitCustomId[1]
-    console.log(`Processing ${mcUsername}...`)
     const reason = splitCustomId[2]
-    console.log(`...for ${reason}`)
+    const messageId = splitCustomId[3]
+    console.log(`Processing ${mcUsername} (DcId: ${dcId}) for ${reason}. Message ID: ${messageId}`)
 
     let discordUser: DiscordJS.User | undefined
     let discordUsername: string = "Unknown user"
@@ -77,13 +77,37 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
         return
     })
 
-    const labelText: string = b.component.label.toLowerCase()
-
     await userPromise
 
     if (discordUser == null){
         console.log("discord user is undefined! (jx0021)")
         return
+    }
+
+    let appChannel = client.channels.cache.get(APPLICATION_CHANNEL_ID)
+    if (appChannel != null && appChannel.isText()) {
+        let message = appChannel.messages.cache.get(messageId)
+        if (message != null) {
+            con.query(`UPDATE applicationhistory SET status = ? WHERE messageId = ?`, [reason, messageId], (err: any, result: { affectedRows: number }) => {
+                if (err) {
+                    console.error('Error updating status:', err)
+                } else {
+                    if (result.affectedRows > 0) {
+                        console.log(`Status updated for message ID ${messageId}`)
+                    } else {
+                        console.log(`No rows were affected for message ID ${messageId}`)
+                    }
+                }
+            })
+
+            if (reason == "accept") {
+                message.react(YES_EMOJI)
+            } else if (reason == "rulereject" || reason == "rulerejectkick") {
+                message.react(RULE_PHRASE_EMOJI)
+            } else { // if not accept must be a reject
+                message.react(NO_EMOJI)
+            }
+        }
     }
 
     if (reason == "accept") {
@@ -94,7 +118,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
         //WHITELISTING
         // @ts-ignore
         if(!verifyUsernameInput(mcUsername)){
-            whitelistMessage = "<:no:897152291809935430> " + escapedMcUsername + " is not a recognised username"
+            whitelistMessage = "NO_EMOJI " + escapedMcUsername + " is not a recognised username"
         }
         else
         {
@@ -102,7 +126,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
             con.query('SELECT name FROM whitelist WHERE name = ? AND whitelisted = 0', [mcUsername], function (err: any, result: any, fields: any){
                 console.log("select statement")
                 if (err){
-                    whitelistMessage = "<:no:897152291809935430> SQL Error 1, Jac needs to look into this (jx0005)"
+                    whitelistMessage = "NO_EMOJI SQL Error 1, Jac needs to look into this (jx0005)"
                     console.error(err)
                 }
                 else {
@@ -114,10 +138,10 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
                 else{
                     con.query('INSERT INTO whitelist (uuid, name, whitelisted) VALUES (?,?,0)', [uuidv4(), mcUsername] , function (err: any, result: any, fields: any) {
                         if (err){
-                            whitelistMessage = "<:no:897152291809935430> SQL Error 2, Jac needs to look into this (jx0022)"
+                            whitelistMessage = "NO_EMOJI SQL Error 2, Jac needs to look into this (jx0022)"
                             console.error(err)
                         }
-                        whitelistMessage = "<:yes:897152291591819376> " + escapedMcUsername + " has been added to the whitelist"
+                        whitelistMessage = "YES_EMOJI " + escapedMcUsername + " has been added to the whitelist"
                     })
                 }
             })
@@ -129,7 +153,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
             const {name, id} = await fetch('https://api.mojang.com/users/profiles/minecraft/' + mcUsername).then((response: { json: () => any; }) => response.json())
             mcuuid = id;
             if (mcuuid == null){
-                accountLinkMessage = "<:no:897152291809935430> Cannot retrieve Minecraft uuid"
+                accountLinkMessage = "NO_EMOJI Cannot retrieve Minecraft uuid"
             }
             else{
                 mcUsername = name
@@ -137,7 +161,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
         } catch (err) {
             console.log(err)
             console.log("Invalid parameters")
-            accountLinkMessage = "<:no:897152291809935430> SQL Error 3, Jac needs to look into this"
+            accountLinkMessage = "NO_EMOJI SQL Error 3, Jac needs to look into this"
         }
         if (mcuuid != null) {
             con.query(`INSERT INTO accountLinking VALUES (\'${dcId}\',\'${mcuuid}\')`, function (err: any, result: any, fields: any) {
@@ -146,20 +170,20 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
                         accountLinkMessage = "<:maybe:1024499432781254697> This account has already been linked"
                         console.log(accountLinkMessage)
                     } else {
-                        accountLinkMessage = "<:no:897152291809935430> Error processing request, Jac needs to look into this"
+                        accountLinkMessage = "NO_EMOJI Error processing request, Jac needs to look into this"
                         console.error("errno: " + err.errno)
                         console.error(err)
                     }
                 }
                 else{
                     console.log("success")
-                    accountLinkMessage = "<:yes:897152291591819376> " + `MC account ${escapedMcUsername} Linked to Discord user ${escapeFormatting(discordUsername)}`
+                    accountLinkMessage = "YES_EMOJI " + `MC account ${escapedMcUsername} Linked to Discord user ${escapeFormatting(discordUsername)}`
                     console.log(accountLinkMessage)
                 }
             })
         }
         else { //fail
-            accountLinkMessage = "<:no:897152291809935430> SQL connection error 4, Jac needs to look into this"
+            accountLinkMessage = "NO_EMOJI SQL connection error 4, Jac needs to look into this"
             console.log(accountLinkMessage)
         }
 
@@ -173,7 +197,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
             const guildInvite = await theGuild.systemChannel.createInvite({maxAge: 604800, maxUses: 1, unique: true}).catch(error => {
                 // @ts-ignore
                 i.channel.send("Error in generating invite link: " + error)
-                personDmMessage = "<:no:897152291809935430> Could not generate server invite, Jac needs to look into this"
+                personDmMessage = "NO_EMOJI Could not generate server invite, Jac needs to look into this"
             }).then(invite => {
                 // @ts-ignore
                 discordUser.send({
@@ -183,16 +207,16 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
                         `Welcome to ${SERVER_NAME}!`
                 }).then(result => {
                     // @ts-ignore
-                    personDmMessage = `<:yes:897152291591819376> Sent a DM to ${getDiscordDisplayName(discordUser)}`
+                    personDmMessage = `YES_EMOJI Sent a DM to ${getDiscordDisplayName(discordUser)}`
                     console.log(`ACCEPT MESSAGE SENT OK FOR ${discordUser?.username}`)
                 }).catch(error => { // @ts-ignore
                     console.log("Error in sending message: " + error)
-                    personDmMessage = `<:no:897152291809935430> Could not send the DM. type /accept and do manually`
+                    personDmMessage = `NO_EMOJI Could not send the DM. type /accept and do manually`
                 })
             })
         }
         catch (err){
-            personDmMessage = "<:no:897152291809935430> Could not generate server invite, Jac needs to look into this"
+            personDmMessage = "NO_EMOJI Could not generate server invite, Jac needs to look into this"
             console.log(err)
         }
 
@@ -227,7 +251,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
             return
         }).catch(error => {
             console.log(`Error in sending message: ${error}`)
-            i.channel?.send(`<:no:897152291809935430> Could not send the DM. You will need to send manually (jx0023: ${error})`)
+            i.channel?.send(`NO_EMOJI Could not send the DM. You will need to send manually (jx0023: ${error})`)
             return
         })
     }
@@ -709,7 +733,7 @@ export function messageAndKick(interaction: Interaction, kickedMcUsername: Strin
         content: kickMessage
     }).then(result => {
         if (interaction.channel == null || interaction.guild == null) throw "channel or guild is null jx0026"
-        const personDmMessage: string = `<:yes:897152291591819376> Sent a DM to ${discordUsername}`
+        const personDmMessage: string = `YES_EMOJI Sent a DM to ${discordUsername}`
         console.log(personDmMessage)
         interaction.channel.send(personDmMessage)
 

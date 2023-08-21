@@ -4,8 +4,6 @@ import {
     MessageActionRow,
     MessageButton,
     MessageEmbed,
-    MessageOptions,
-    MessagePayload,
     TextBasedChannel,
     TextChannel
 } from "discord.js"
@@ -41,11 +39,12 @@ export async function processNewApplication(message: DiscordJS.Message) {
     }
     const applicationTextChannel: TextBasedChannel = applicationChannel as DiscordJS.TextChannel
 
-    const application = await scanApplication(message.embeds[0])
+    const applicationEmbedToScan = message.embeds[0]
+    const application = await scanApplication(applicationEmbedToScan)
 
     const rulePhraseDetectedString: string = application.rulePhraseDetected ? "Yes" : "No"
 
-    const applicationEmbed = new MessageEmbed()
+    const applicationEmbedToPost = new MessageEmbed()
         .setColor("#bdbc4b")
         .setTitle("New Application - Please vote")
         .setDescription(
@@ -54,10 +53,10 @@ export async function processNewApplication(message: DiscordJS.Message) {
             `Age: ${application.age}\n` +
             `${capitalizeFirstLetter(RULE_PHRASE_TEXT)} Detected: ${rulePhraseDetectedString}\n` +
             `Application Size: ${application.applicationLengthDescription}`)
-        .setFooter(application.discordID)
+        .setFooter(`${application.discordID},${message.id}`)
 
     applicationChannel.send("@everyone")
-    applicationChannel.send({embeds: [applicationEmbed]})
+    applicationChannel.send({embeds: [applicationEmbedToPost]})
         .then(function (message: { react: (arg0: string) => void }){
             message.react(YES_EMOJI)
             message.react(NO_EMOJI)
@@ -79,8 +78,20 @@ export async function processNewApplication(message: DiscordJS.Message) {
     }
 
     if (!application.rulePhraseDetected){
-        postRuleRejectButtons(application.ign,application.discordID,applicationTextChannel)
+        postRuleRejectButtons(application.ign,application.discordID,applicationTextChannel, message.id)
     }
+
+    let mcUuid = await nameToUuid(application.ign) ?? "unknown"
+
+    // export application data to database
+    con.query(`INSERT INTO applicationhistory(dcUserId, messageId, messageTimestamp, messageURL, mcUsername, mcUuid, status) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [application.discordID, message.id, message.createdTimestamp, message.url, application.ign, mcUuid, "unknown"], (err: any) => {
+            if (err) {
+                console.error('Error inserting data:', err);
+            } else {
+                console.log('Data inserted successfully');
+            }
+        })
 
     await postApplicationHistory(message, applicationChannel, application.discordID, application.ign)
 
@@ -89,7 +100,6 @@ export async function processNewApplication(message: DiscordJS.Message) {
 
 export async function postApplicationHistory(message: Message, messageChannel: TextChannel, discordId: string, mcUsername = '') {
     let applicationHistory: MessageEmbed[];
-    let username: String
     try {
         applicationHistory = await checkApplicationHistory(discordId,mcUsername)
         if (applicationHistory != null && applicationHistory.length >= 1 && applicationHistory[0].description != null && applicationHistory[0].description.length >= 1) {
@@ -115,23 +125,21 @@ export async function scanApplication(receivedEmbed: MessageEmbed): Promise<Appl
     }
 
     const ignBlockText = receivedEmbed.description.match("What is your Minecraft IGN\\?:(.|\\n)*What is your age\\?:")?.toString()
-    const ign = ignBlockText?.slice(29,-22)
+    const ign = ignBlockText?.slice(29,-22) ?? "Unknown"
 
     const ageBlockText = receivedEmbed.description.match("What is your age\\?:(.|\\n)*Why do you want to join this server\\?:")?.toString()
-    const age = ageBlockText?.slice(19,-41)
+    const age = ageBlockText?.slice(19,-41) ?? "Error"
 
     const referralText = receivedEmbed.description.match("please specify who\\.:(.|\\n)*Have you read and understood")?.toString()
-    const referral = referralText?.slice(21,-32)
+    const referral = referralText?.slice(21,-32) ?? "Error"
 
     const discordNameBlockText = receivedEmbed.footer?.text.match("Applicant:\\s*.+\\s*ID")?.toString()
-    const discordName = discordNameBlockText?.slice(11,-3)
+    const discordName = discordNameBlockText?.slice(11,-3) ?? "Error"
 
-    const discordID = receivedEmbed.footer?.text.slice(-19).trim()
-    //console.log(discordID)
+    const discordID = receivedEmbed.footer?.text.slice(-19).trim() ?? "Error"
 
-    let applicationLengthDescription = "Unknown"
+    let applicationLengthDescription: string
     const applicationLength = receivedEmbed.description.length
-    //console.log(`application length is ${applicationLength} characters`)
     if (applicationLength < 590) applicationLengthDescription = "Impressively bad"
     else if (applicationLength < 775) applicationLengthDescription = "Yikes"
     else if (applicationLength < 820) applicationLengthDescription = "Basic"
@@ -142,7 +150,7 @@ export async function scanApplication(receivedEmbed: MessageEmbed): Promise<Appl
     else applicationLengthDescription = "WOAH!"
 
     const rulePhraseDetected: boolean = containsRulePhrase(receivedEmbed.description)
-    // @ts-ignore
+
     return new Application(ign, age, referral, discordName, discordID, applicationLengthDescription, rulePhraseDetected)
 }
 
@@ -199,11 +207,13 @@ export function checkApplicationHistory(dcUserId: string, mcUsername = ''): Prom
             mcUuid = ''
         } else mcUuid = await nameToUuid(mcUsername)
 
+        const oneMinuteAgo = Date.now() - 60 * 1000
+
         console.log(`SELECT * FROM applicationhistory WHERE dcUserId = '${dcUserId}' or mcUsername = '${mcUsername}' or mcUuid = '${mcUuid}'`)
         con.query(
-            'SELECT * FROM applicationhistory WHERE dcUserId = ? or mcUsername = ? or mcUuid = ? ORDER BY messageTimestamp DESC',
-            [dcUserId, mcUsername, mcUuid],
-            function (err: any, result: any, fields: any) {
+            'SELECT * FROM applicationhistory WHERE (dcUserId = ? or mcUsername = ? or mcUuid = ?) AND messageTimestamp < ? ORDER BY messageTimestamp DESC',
+            [dcUserId, mcUsername, mcUuid, oneMinuteAgo],
+            function (err: any, result: any) {
                 if (err) {
                     reject(err)
                     return
@@ -212,11 +222,12 @@ export function checkApplicationHistory(dcUserId: string, mcUsername = ''): Prom
                 let username: String = ""
 
                 for (var sqlItem of result) {
-                    var sqlDcUserId = sqlItem['dcUserId']
-                    var sqlMcUsername = sqlItem['mcUsername']
-                    var sqlMcUuid = sqlItem['mcUuid']
-                    var messageTimestamp = sqlItem['messageTimestamp'].slice(0, -3)
-                    var messageURL = sqlItem['messageURL']
+                    let sqlDcUserId = sqlItem['dcUserId']
+                    let sqlMcUsername = sqlItem['mcUsername']
+                    let sqlMcUuid = sqlItem['mcUuid']
+                    let messageTimestamp = sqlItem['messageTimestamp'].slice(0, -3)
+                    let messageURL = sqlItem['messageURL']
+                    let status = sqlItem['status']
 
                     // remove nulls to check for errors
                     if (dcUserId == null) dcUserId = ""
@@ -253,56 +264,57 @@ export function checkApplicationHistory(dcUserId: string, mcUsername = ''): Prom
                         answerString = ""
                     }
 
-                    answerString += `The same ${sharingString} detected <t:${messageTimestamp}:R> on <t:${messageTimestamp}:f> ${messageURL}\n`
+                    let applicationSuccessString = status == null || status == "unknown" ? "" : `. Application status: ${status}.`
+                    answerString += `The same ${sharingString} detected <t:${messageTimestamp}:R> on <t:${messageTimestamp}:f> ${messageURL}${applicationSuccessString}\n`
                 }
 
                 if (answerString.length >= 1) returnMessage.push(new MessageEmbed().setDescription(answerString))
-                if (username != "" && returnMessage.length >= 1) returnMessage.at(0)?.setTitle(`Player username: ${username}`)
+                if (username != "" && returnMessage.length >= 1) returnMessage.at(0)?.setTitle(`Player username: ${escapeFormatting(username.toString())}`)
                 resolve(returnMessage)
             }
         )
     })
 }
 
-export function postRuleRejectButtons(mcusername: string, discordID: string, channel: DiscordJS.TextBasedChannel) {
+export function postRuleRejectButtons(mcusername: string, discordID: string, channel: DiscordJS.TextBasedChannel, applicationMessageId: String) {
     const ruleViolationButton = new MessageActionRow()
         .addComponents(
             new MessageButton()
-                .setCustomId(`${mcusername},${discordID},rulereject`)
+                .setCustomId(`${mcusername},${discordID},rulereject,${applicationMessageId}`)
                 .setLabel(`${RULE_PHRASE_EMOJI} ${capitalizeFirstLetter(RULE_PHRASE_TEXT)} rule reject ${unescapeFormatting(mcusername)}`)
                 .setStyle('SECONDARY'),
         )
     const genericDeclineButton = new MessageActionRow()
         .addComponents(
             new MessageButton()
-                .setCustomId(`${mcusername},${discordID},rulerejectkick`)
+                .setCustomId(`${mcusername},${discordID},rulerejectkick,${applicationMessageId}`)
                 .setLabel(`${RULE_PHRASE_EMOJI} ${capitalizeFirstLetter(RULE_PHRASE_TEXT)} rule reject AND KICK ${unescapeFormatting(mcusername)}`)
                 .setStyle('DANGER'),
         )
     channel.send({ content:`${escapeFormatting(mcusername)} has been flagged as not having mentioned ${RULE_PHRASE_TEXT}. Click the button to ${RULE_PHRASE_TEXT} reject`, components: [ruleViolationButton, genericDeclineButton] })
 }
 
-export function postRegularRejectButtons(mcusername: string, discordID: string, channel: DiscordJS.TextBasedChannel) {
+export function postRegularRejectButtons(mcusername: string, discordID: string, channel: DiscordJS.TextBasedChannel, applicationMessageId: String) {
     const badApplicationButton = new MessageActionRow()
         .addComponents(
             new MessageButton()
-                .setCustomId(`${mcusername},${discordID},badappreject`)
+                .setCustomId(`${mcusername},${discordID},badappreject,${applicationMessageId}`)
                 .setLabel(`💩 Reject and kick ${unescapeFormatting(mcusername)} for bad application`)
                 .setStyle('SECONDARY'),
         )
     const underAgeButton = new MessageActionRow()
         .addComponents(
             new MessageButton()
-                .setCustomId(`${mcusername},${discordID},underagereject`)
+                .setCustomId(`${mcusername},${discordID},underagereject,${applicationMessageId}`)
                 .setLabel(`🔞 Reject and kick ${unescapeFormatting(mcusername)} for underage application`)
                 .setStyle('SECONDARY'),
         )
     const genericButton = new MessageActionRow()
         .addComponents(
             new MessageButton()
-                .setCustomId(`${mcusername},${discordID},genericreject`)
+                .setCustomId(`${mcusername},${discordID},genericreject,${applicationMessageId}`)
                 .setLabel(`👎 Reject and kick ${unescapeFormatting(mcusername)} for no reason`)
                 .setStyle('SECONDARY'),
         )
-    channel.send({ content:`${escapeFormatting(mcusername)} has recieved enough votes to be rejected. Click a button to reject`, components: [badApplicationButton, underAgeButton, genericButton] })
+    channel.send({ content:`${escapeFormatting(mcusername)} has received enough votes to be rejected. Click a button to reject`, components: [badApplicationButton, underAgeButton, genericButton] })
 }
