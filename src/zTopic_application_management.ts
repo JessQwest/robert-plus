@@ -106,9 +106,9 @@ export async function processNewApplication(message: DiscordJS.Message) {
     con.query(`INSERT INTO applicationhistory(dcUserId, messageId, messageTimestamp, messageURL, mcUsername, mcUuid, status) VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [application.discordID, message.id, message.createdTimestamp, message.url, application.ign, mcUuid, "unknown"], (err: any) => {
             if (err) {
-                console.error('Error inserting data:', err);
+                console.error('Error inserting data:', err)
             } else {
-                console.log('Data inserted successfully');
+                console.log('Data inserted successfully')
             }
         })
 
@@ -118,7 +118,7 @@ export async function processNewApplication(message: DiscordJS.Message) {
 }
 
 export async function postApplicationHistory(message: Message, messageChannel: TextChannel, discordId: string, mcUsername = '') {
-    let applicationHistory: MessageEmbed[];
+    let applicationHistory: MessageEmbed[]
     try {
         applicationHistory = await checkApplicationHistory(discordId,mcUsername)
         if (applicationHistory != null && applicationHistory.length >= 1 && applicationHistory[0].description != null && applicationHistory[0].description.length >= 1) {
@@ -281,19 +281,19 @@ export function checkApplicationHistory(dcUserId: string, mcUsername = ''): Prom
                     // establish what is matching
                     var sharingString = ""
                     if (dcUserId != "" && dcUserId.toLowerCase() === sqlDcUserId.toLowerCase()) {
-                        sharingString += 'Discord account';
+                        sharingString += 'Discord account'
                     }
 
                     if (mcUuid != "" && mcUuid.toLowerCase() === sqlMcUuid.toLowerCase()) {
                         if (sharingString) {
-                            sharingString += ' and ';
+                            sharingString += ' and '
                         }
-                        sharingString += 'Minecraft account';
+                        sharingString += 'Minecraft account'
                     } else if (mcUsername != "" && mcUsername.toLowerCase() === sqlMcUsername.toLowerCase()) {
                         if (sharingString) {
-                            sharingString += ' and ';
+                            sharingString += ' and '
                         }
-                        sharingString += 'Minecraft username';
+                        sharingString += 'Minecraft username'
                     }
 
                     // if the amount of text in a 4096 character embed is about to be maxxed
