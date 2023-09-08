@@ -111,7 +111,7 @@ async function removeApplicationMembers() {
             } else {
                 let daysJoined = (Date.now() - member.joinedTimestamp) / millsecondsInDay
                 daysJoined = Math.round(daysJoined)
-                console.log(`${member.user.username} joined at ${member.joinedTimestamp} - ${daysJoined} Days ago`)
+                console.log(`${member.user.username} joined at ${member.joinedTimestamp} - ${daysJoined} days ago`)
                 // if the user has no roles (not staff) and has been in the server for 30 days (applicants) or 3 days (in the main server) kick them
                 let kickReason = ""
                 if (member.roles.cache.size <= 1 && daysJoined >= 30) kickReason = `${escapeFormatting(member.user.username)} joined ${daysJoined} Days ago and is being kicked for inactivity.`
