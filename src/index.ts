@@ -75,12 +75,15 @@ else{
 }
 
 // server constants
-export const APPLICATION_SERVER_ID = "743616108288016464"
+export const APPLICATION_SERVER_ID = DEBUGMODE ? "772844397020184576" : "743616108288016464"
 export const MAIN_SERVER_ID = "706923004285812849"
 
 // other constants
 // second number needs to be one greater than the majority of staff (for 5 staff, majority is 3, so this value needs to be 4)
 export const staffReactThreshold = DEBUGMODE ? 2 : 4
+export const APPLICATION_VOTE_REMINDER_THRESHOLD_HOURS = DEBUGMODE ? 0.0001 : 8 // how often, in hours, should the bot remind people to vote on applications
+export const APPLICATION_VOTER_ROLE_ID = DEBUGMODE ? "975908077884809276" : "743617410069692437" // people with this role that have not voted will be pinged to vote
+export const APPLICATION_MAX_REMIND_TIMES = 3 // how many times should the bot remind people to vote on applications. a give up message will be sent after this
 export const ROBERT_USER_ID = "969760796278157384"
 export const MUSEUM_ROLE_ID = "1121767435159212112"
 export const BIRTHDAY_ROLE_ID = "801826957041860638"
@@ -194,9 +197,14 @@ client.on('messageCreate', async (message) => {
     await messageCreate(client, message)
 })
 
+// hourly housekeep
+cron.schedule('* * * * *', async () => { // 0 * * * * for every hour or * * * * * for every min
+    await scheduled_jobs.hourlyHousekeepTask()
+})
+
 // daily housekeep at 7am gmt hopefully
-cron.schedule('0 7 * * *', async () => { // 0 7 * * * or * * * * *
-    await scheduled_jobs.housekeepTask()
+cron.schedule('0 7 * * *', async () => { // 0 7 * * * for every 7am or * * * * * for every min
+    await scheduled_jobs.dailyHousekeepTask()
 })
 
 // sleepy time every day at 7am

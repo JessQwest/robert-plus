@@ -26,6 +26,8 @@ import {
 } from "./index"
 import {nameToUuid} from "./api"
 
+export var activeApplications: ActiveApplication[] = []
+
 export async function processNewApplication(message: DiscordJS.Message) {
     const applicationChannel = client.channels.cache.get(APPLICATION_VOTING_CHANNEL_ID) //channel to vote in
     const applicationNotificationChannel = client.channels.cache.get(APPLICATION_NOTIFICATION_CHANNEL_ID) //channel to notify basic app info
@@ -55,11 +57,28 @@ export async function processNewApplication(message: DiscordJS.Message) {
             `Application Size: ${application.applicationLengthDescription}`)
         .setFooter(`${application.discordID},${message.id}`)
 
+    let votingIgn: string = ""
+    let applicationMessageId: string = ""
+    let votingMessageUrl: string = ""
+    let votingMessageTimestamp: number = 0
+
     applicationChannel.send("@everyone")
     applicationChannel.send({embeds: [applicationEmbedToPost]})
-        .then(function (message: { react: (arg0: string) => void }){
-            message.react(YES_EMOJI)
-            message.react(NO_EMOJI)
+        .then(function (voteMessage: { react: (arg0: string) => void }){
+            if (voteMessage instanceof Message) {
+                votingIgn = application.ign
+                applicationMessageId = message.id
+                votingMessageUrl = voteMessage.url
+                votingMessageTimestamp = voteMessage.createdTimestamp
+                activeApplications.push(new ActiveApplication(
+                    votingIgn,
+                    applicationMessageId,
+                    votingMessageUrl,
+                    votingMessageTimestamp
+                ))
+            }
+            voteMessage.react(YES_EMOJI)
+            voteMessage.react(NO_EMOJI)
         })
 
     const basicApplicationEmbed = new MessageEmbed()
@@ -171,6 +190,25 @@ class Application {
         this.applicationLengthDescription = applicationLengthDescription
         this.rulePhraseDetected = rulePhraseDetected
     }
+}
+
+class ActiveApplication {
+    public name: string
+    public applicationMessageId: string
+    public url: string
+    public timestamp: number
+    public lastNotificationDatetime: Date = new Date()
+    public remindedCount: number = 0
+    constructor(name: string, applicationMessageId: string, url: string, timestamp: number) {
+        this.name = name
+        this.applicationMessageId = applicationMessageId
+        this.url = url
+        this.timestamp = timestamp
+    }
+}
+
+export async function removeActiveApplication(applicationMessageId: string) {
+    activeApplications = activeApplications.filter(application => application.applicationMessageId != applicationMessageId)
 }
 
 export async function changeApplicationIGN(message: DiscordJS.Message) {

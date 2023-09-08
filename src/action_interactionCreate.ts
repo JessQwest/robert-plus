@@ -15,6 +15,7 @@ import {
 // @ts-ignore
 import { v4 as uuidv4 } from 'uuid';
 import {nameToUuid} from "./api"
+import {removeActiveApplication} from "./zTopic_application_management"
 
 export var buttonIDSet : Set<string> = new Set
 export async function interactionCreateButton(client: Client, i: Interaction) {
@@ -60,6 +61,8 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
     const reason = splitCustomId[2]
     const messageId = splitCustomId[3]
     console.log(`Processing ${mcUsername} (DcId: ${dcId}) for ${reason}. Message ID: ${messageId}`)
+
+    await removeActiveApplication(messageId)
 
     let discordUser: DiscordJS.User | undefined
     let discordUsername: string = "Unknown user"
@@ -201,9 +204,9 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
             }).then(invite => {
                 // @ts-ignore
                 discordUser.send({
-                    content: `Hi, I'm Robert, the robotic assistant for ${SERVER_NAME}. Thank you for your interest and application for ${SERVER_NAME}. Your application has been approved and you have been whitelisted on the server. \n` +// @ts-ignore
-                        "Please join the main server discord with this invite link: https://discord.gg/" + invite.code + "\n" +
-                        "Other details about the server such as the IP address can be found in the #information channel. You don't need to be in the application server anymore.\n" +
+                    content: `Hi, I'm Robert, the robotic assistant for ${SERVER_NAME}. Thank you for your interest and application for ${SERVER_NAME}. Your application has been approved and you have been whitelisted on the server.\n` +// @ts-ignore
+                        `Please join the main server discord with this invite link: https://discord.gg/${invite.code}\n` +
+                        `Other details about the server such as the IP address can be found in the #information channel. You don't need to be in the application server anymore.\n` +
                         `Welcome to ${SERVER_NAME}!`
                 }).then(result => {
                     // @ts-ignore
@@ -258,22 +261,22 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
 
     if (reason == "rulerejectkick") {
         messageAndKick(i, escapedMcUsername, b.user.username, discordUser, `Thank you for your application to ${SERVER_NAME}! Unfortunately your application has been denied at this time for failure to read the rules.`)
-        await i.update({ content: `${escapedMcUsername} was ${RULE_PHRASE_TEXT} rejected and kicked by ${b.user.username}`, components: [] });
+        await i.update({ content: `${escapedMcUsername} was ${RULE_PHRASE_TEXT} rejected and kicked by ${b.user.username}`, components: [] })
     }
 
     if (reason == "badappreject") {
         messageAndKick(i, escapedMcUsername, b.user.username, discordUser, `Thank you for your interest in ${SERVER_NAME}!\nUnfortunately, your application did not receive enough staff votes to be accepted at this server.\nHave a great day.`)
-        await i.update({ content: `${escapedMcUsername} was rejected and kicked by ${b.user.username} for a bad application`, components: [] });
+        await i.update({ content: `${escapedMcUsername} was rejected and kicked by ${b.user.username} for a bad application`, components: [] })
     }
 
     if (reason == "underagereject") {
         messageAndKick(i, escapedMcUsername, b.user.username, discordUser, `Thank you for your interest in ${SERVER_NAME}. Unfortunately your application has been denied at this time due to our 16+ age requirement.\nPlease feel free to reapply when you are 16!`)
-        await i.update({ content: `${escapedMcUsername} was rejected and kicked by ${b.user.username} for underage application`, components: [] });
+        await i.update({ content: `${escapedMcUsername} was rejected and kicked by ${b.user.username} for underage application`, components: [] })
     }
 
     if (reason == "genericreject") {
         messageAndKick(i, escapedMcUsername, b.user.username, discordUser, `Thank you for your interest in ${SERVER_NAME}!\nUnfortunately, your application on this occasion has not been successful.\nHave a great day.`)
-        await i.update({ content: `${escapedMcUsername} was rejected and kicked by ${b.user.username} for a bad application`, components: [] });
+        await i.update({ content: `${escapedMcUsername} was rejected and kicked by ${b.user.username} for a bad application`, components: [] })
     }
 }
 
