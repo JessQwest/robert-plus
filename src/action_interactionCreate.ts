@@ -76,7 +76,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
             console.log(`Error in reporting getting username error (jx0018)`)
             return
         }
-        i.channel.send("Could not get discord username, Jac probably did a bad")
+        i.channel.send("Could not get discord username, Jess probably did a bad")
         return
     })
 
@@ -129,7 +129,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
             con.query('SELECT name FROM whitelist WHERE name = ? AND whitelisted = 0', [mcUsername], function (err: any, result: any, fields: any){
                 console.log("select statement")
                 if (err){
-                    whitelistMessage = `${NO_EMOJI} SQL Error 1, Jac needs to look into this (jx0005)`
+                    whitelistMessage = `${NO_EMOJI} SQL Error 1, Jess needs to look into this (jx0005)`
                     console.error(err)
                 }
                 else {
@@ -141,7 +141,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
                 else{
                     con.query('INSERT INTO whitelist (uuid, name, whitelisted) VALUES (?,?,0)', [uuidv4(), mcUsername] , function (err: any, result: any, fields: any) {
                         if (err){
-                            whitelistMessage = `${NO_EMOJI} SQL Error 2, Jac needs to look into this (jx0022)`
+                            whitelistMessage = `${NO_EMOJI} SQL Error 2, Jess needs to look into this (jx0022)`
                             console.error(err)
                         }
                         whitelistMessage = `${YES_EMOJI} ${escapedMcUsername} has been added to the whitelist`
@@ -164,7 +164,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
         } catch (err) {
             console.log(err)
             console.log("Invalid parameters")
-            accountLinkMessage = `${NO_EMOJI} SQL Error 3, Jac needs to look into this`
+            accountLinkMessage = `${NO_EMOJI} SQL Error 3, Jess needs to look into this`
         }
         if (mcuuid != null) {
             con.query(`INSERT INTO accountLinking VALUES (\'${dcId}\',\'${mcuuid}\')`, function (err: any, result: any, fields: any) {
@@ -173,7 +173,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
                         accountLinkMessage = "<:maybe:1024499432781254697> This account has already been linked"
                         console.log(accountLinkMessage)
                     } else {
-                        accountLinkMessage = `${NO_EMOJI} Error processing request, Jac needs to look into this`
+                        accountLinkMessage = `${NO_EMOJI} Error processing request, Jess needs to look into this`
                         console.error("errno: " + err.errno)
                         console.error(err)
                     }
@@ -186,7 +186,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
             })
         }
         else { //fail
-            accountLinkMessage = `${NO_EMOJI} SQL connection error 4, Jac needs to look into this`
+            accountLinkMessage = `${NO_EMOJI} SQL connection error 4, Jess needs to look into this`
             console.log(accountLinkMessage)
         }
 
@@ -200,7 +200,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
             const guildInvite = await theGuild.systemChannel.createInvite({maxAge: 604800, maxUses: 1, unique: true}).catch(error => {
                 // @ts-ignore
                 i.channel.send("Error in generating invite link: " + error)
-                personDmMessage = `${NO_EMOJI} Could not generate server invite, Jac needs to look into this`
+                personDmMessage = `${NO_EMOJI} Could not generate server invite, Jess needs to look into this`
             }).then(invite => {
                 // @ts-ignore
                 discordUser.send({
@@ -219,7 +219,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
             })
         }
         catch (err){
-            personDmMessage = `${NO_EMOJI} Could not generate server invite, Jac needs to look into this`
+            personDmMessage = `${NO_EMOJI} Could not generate server invite, Jess needs to look into this`
             console.log(err)
         }
 
@@ -323,7 +323,7 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
             } = await fetch('https://api.mojang.com/users/profiles/minecraft/' + options.getString("mcusername")).then((response: { json: () => any; }) => response.json());
 
             if (name == null && id == null) {
-                interaction.editReply("This isn't working right now, try again later or bug Jacques about it");
+                interaction.editReply("This isn't working right now, try again later or bug Jessica about it");
                 return;
             }
             console.log(`dc id to look up = ${id}`)
@@ -451,7 +451,7 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
 
     //commands past this point need special perm
     if (user.id != "252818596777033729" && interaction.channelId != "805296027241676820"){
-        await interaction.reply({content: "Only Jacques may control Robert here."})
+        await interaction.reply({content: "Only Jessica may control Robert here."})
         return;
     }
 
@@ -634,7 +634,7 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
                 if(result.length >= 5){
                     const whitelistedEmbed = new MessageEmbed()
                         .setColor("#e11f1f")
-                        .setTitle("This cannot be done because Jac has probably done a bad, let him sort this one out (jx0020)");
+                        .setTitle("This cannot be done because Jess has probably done a bad, let her sort this one out (jx0020)");
                     interaction.editReply({embeds: [whitelistedEmbed]});
                     return
                 }
@@ -681,7 +681,7 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
             } = await fetch('https://api.mojang.com/users/profiles/minecraft/' + options.getString("mcusername")).then((response: { json: () => any; }) => response.json())
 
             if (name == null && id == null) {
-                interaction.editReply("This isn't working right now, try again later or bug Jacques about it")
+                interaction.editReply("This isn't working right now, try again later or bug Jessica about it")
                 return
             }
             console.log(`dc id to look up = ${id}`)

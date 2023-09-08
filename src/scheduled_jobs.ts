@@ -13,14 +13,14 @@ import {TextChannel} from "discord.js"
 import {activeApplications} from "./zTopic_application_management"
 import {escapeFormatting} from "./utility"
 
-var jacques: string = "252818596777033729"
+var Jessica: string = "252818596777033729"
 var schrute: string = "699331874408890378"
 
 //every day at 7am
 export async function sleepyTime() {
     console.log(`sleepytime task @ ${new Date().toISOString()}`)
     let holidayhome = await client.guilds.fetch("885542685090410586")
-    let juser = await holidayhome.members.fetch(jacques)
+    let juser = await holidayhome.members.fetch(Jessica)
     let suser = await holidayhome.members.fetch(schrute)
     await juser.voice.disconnect()
     await suser.voice.disconnect()
@@ -107,7 +107,7 @@ async function removeApplicationMembers() {
     }
     applicationGuild.members.cache.forEach(member => {
             if (member.joinedTimestamp == null) {
-                sendApplicationNotification(`${member.user.username} doesn't have a joined timestamp! @Jacques`)
+                sendApplicationNotification(`${member.user.username} doesn't have a joined timestamp! @Jessica`)
             } else {
                 let daysJoined = (Date.now() - member.joinedTimestamp) / millsecondsInDay
                 daysJoined = Math.round(daysJoined)

@@ -131,7 +131,7 @@ export async function debug_messageCreate(message: DiscordJS.Message) {
                 "\n" +
                 "Include any additional information or questions here:\n" +
                 "( ’-’)")
-            .setFooter({text: "Applicant: _Jacques_#8805\n" +
+            .setFooter({text: "Applicant: _Jessica_#8805\n" +
                 "ID: 252818596777033729"})
         message.channel.send({embeds: [whitelistedEmbed]})
     }

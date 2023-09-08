@@ -17,7 +17,7 @@ export async function nameToUuid(username: String | null): Promise<string>{
     console.log (`name to uuid lookup result for ${username}: name:${name} id:${id} errormessage:${errorMessage}`)
     if (name == null && id == null && errorMessage == null) {
         console.log(`name to uuid invalid return for ${username}`)
-        throw new Error(`This isn't working right now, try again later or bug Jacques about it (jx0001)`)
+        throw new Error(`This isn't working right now, try again later or bug Jessica about it (jx0001)`)
     }
     else if (errorMessage != null){
         console.log(`name to uuid invalid name ${username}`)
@@ -26,7 +26,7 @@ export async function nameToUuid(username: String | null): Promise<string>{
     }
     else if (id != null) return id
 
-    throw new Error(`An unhandled error has occurred, bug Jacques (jx0002)`)
+    throw new Error(`An unhandled error has occurred, bug Jessica (jx0002)`)
 }
 
 export async function uuidToUsername(uuId: String): Promise<String> {
