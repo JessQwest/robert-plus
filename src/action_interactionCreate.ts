@@ -235,7 +235,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
 
         const acceptEmbed = new MessageEmbed()
             .setColor("#12ce0c")
-            .setTitle("Accept status for " + mcUsername)
+            .setTitle("Accept status for " + escapeFormatting(mcUsername))
             .setDescription("**Added to whitelist:** " + whitelistMessage + "\n" +
                 "**Account linked:** " + accountLinkMessage + "\n" +
                 "**Person DM'd:** " + personDmMessage );

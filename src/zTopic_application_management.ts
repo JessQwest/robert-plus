@@ -26,6 +26,15 @@ import {
 } from "./index"
 import {nameToUuid} from "./api"
 
+const applicationStatusDictionary: Record<string, string> = {
+    'accept': 'Application Accepted',
+    'rulereject': 'Rejected for not reading rules',
+    'rulerejectkick': 'Rejected AND KICKED for not reading rules',
+    'badappreject': 'Rejected for bad application',
+    'underagereject': 'Rejected for underage application',
+    'genericreject': 'Rejected (no specific reason given)',
+}
+
 export var activeApplications: ActiveApplication[] = []
 
 export async function processNewApplication(message: DiscordJS.Message) {
@@ -302,6 +311,8 @@ export function checkApplicationHistory(dcUserId: string, mcUsername = ''): Prom
                         answerString = ""
                     }
 
+                    if (typeof status === 'string') status = applicationStatusDictionary[status]
+
                     let applicationSuccessString = status == null || status == "unknown" ? "" : `. Application status: ${status}.`
                     answerString += `The same ${sharingString} detected <t:${messageTimestamp}:R> on <t:${messageTimestamp}:f> ${messageURL}${applicationSuccessString}\n`
                 }
@@ -337,21 +348,21 @@ export function postRegularRejectButtons(mcusername: string, discordID: string, 
         .addComponents(
             new MessageButton()
                 .setCustomId(`${mcusername},${discordID},badappreject,${applicationMessageId}`)
-                .setLabel(`💩 Reject and kick ${unescapeFormatting(mcusername)} for bad application`)
+                .setLabel(`💩 Bad application reject and kick ${unescapeFormatting(mcusername)}`)
                 .setStyle('SECONDARY'),
         )
     const underAgeButton = new MessageActionRow()
         .addComponents(
             new MessageButton()
                 .setCustomId(`${mcusername},${discordID},underagereject,${applicationMessageId}`)
-                .setLabel(`🔞 Reject and kick ${unescapeFormatting(mcusername)} for underage application`)
+                .setLabel(`🔞 Underage application reject and kick ${unescapeFormatting(mcusername)}`)
                 .setStyle('SECONDARY'),
         )
     const genericButton = new MessageActionRow()
         .addComponents(
             new MessageButton()
                 .setCustomId(`${mcusername},${discordID},genericreject,${applicationMessageId}`)
-                .setLabel(`👎 Reject and kick ${unescapeFormatting(mcusername)} for no reason`)
+                .setLabel(`👎 Generic reason reject and kick ${unescapeFormatting(mcusername)}`)
                 .setStyle('SECONDARY'),
         )
     channel.send({ content:`${escapeFormatting(mcusername)} has received enough votes to be rejected. Click a button to reject`, components: [badApplicationButton, underAgeButton, genericButton] })
