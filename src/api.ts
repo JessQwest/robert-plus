@@ -1,6 +1,8 @@
-import {verifyUsernameInput} from "./utility"
+import {capitalizeFirstLetter, escapeFormatting, verifyUsernameInput} from "./utility"
 import fetch from "node-fetch"
-import {con} from "./index"
+import {con, RULE_PHRASE_TEXT} from "./index"
+import * as DiscordJS from "discord.js"
+import {MessageEmbed} from "discord.js"
 
 // given the minecraft username, gets the uuid for that username
 export async function nameToUuid(username: String | null): Promise<string>{
@@ -27,6 +29,31 @@ export async function nameToUuid(username: String | null): Promise<string>{
     else if (id != null) return id
 
     throw new Error(`An unhandled error has occurred, bug Jessica (jx0002)`)
+}
+
+export async function usernameCheck(username: string, textChannel: DiscordJS.TextChannel): Promise<Boolean> {
+    return new Promise(async (resolve, reject) => {
+        const url = `https://api.mojang.com/users/profiles/minecraft/${username}`
+
+        try {
+            const response = await fetch(url)
+            const data = await response.json()
+
+            if (data.errorMessage) {
+                const errorEmbed = new MessageEmbed()
+                    .setColor("#f5bc06")
+                    .setTitle("Minecraft Username Check Failed")
+                    .setDescription(`⚠️ ${data.errorMessage} ⚠️`)
+                textChannel.send({embeds: [errorEmbed]})
+                resolve(false)
+            } else {
+                resolve(true)
+            }
+        } catch (error) {
+            console.error('Error:', error)
+            reject(error)
+        }
+    })
 }
 
 export async function uuidToUsername(uuId: String): Promise<String> {

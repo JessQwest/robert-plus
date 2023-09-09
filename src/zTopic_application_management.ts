@@ -24,9 +24,9 @@ import {
     RULE_PHRASE_TEXT,
     YES_EMOJI
 } from "./index"
-import {nameToUuid} from "./api"
+import {nameToUuid, usernameCheck} from "./api"
 
-const applicationStatusDictionary: Record<string, string> = {
+export const applicationStatusDictionary: Record<string, string> = {
     'accept': 'Application Accepted',
     'rulereject': 'Rejected for not reading rules',
     'rulerejectkick': 'Rejected AND KICKED for not reading rules',
@@ -101,7 +101,9 @@ export async function processNewApplication(message: DiscordJS.Message) {
 
     applicationNotificationChannel.send({embeds: [basicApplicationEmbed]})
 
-    if (!verifyUsernameInput(application.ign)){
+    // check if mojang recognizes the username or if its spelt correctly
+    let usernameValid: Boolean = await usernameCheck(application.ign, applicationChannel)
+    if (!usernameValid && !verifyUsernameInput(application.ign)){
         applicationChannel.send("This IGN doesnt look quite right. Reply to the application message with !(ign) if it is wrong")
     }
 
@@ -222,10 +224,18 @@ export async function removeActiveApplication(applicationMessageId: string) {
 
 export async function changeApplicationIGN(message: DiscordJS.Message) {
     if (message.reference != null && message.reference.messageId != null && message.content.at(0) == "!") {
+        // initial null checks
         if (client.user == null) {
             console.error(`client.user is null (jx0036)`)
             return
         }
+        const applicationChannel = client.channels.cache.get(APPLICATION_VOTING_CHANNEL_ID) //channel to vote in
+        if (applicationChannel == null || !(applicationChannel instanceof TextChannel)) {
+            console.log(`${APPLICATION_CHANNEL_ID} is not a valid text channel for application information (jx0011)`)
+            return
+        }
+
+        const newIgnToSet = message.content.slice(1)
         const messageRepliedTo: DiscordJS.Message = await message.channel.messages.fetch(message.reference.messageId)
         if (messageRepliedTo.author.id == client.user.id && messageRepliedTo.embeds.length >= 1) {
             const embed = messageRepliedTo.embeds[0]
@@ -239,8 +249,9 @@ export async function changeApplicationIGN(message: DiscordJS.Message) {
                 return
             }
             const mcUsername = usernameBlockText.slice(5, -8)
-            embed.setDescription(embed.description.replace(mcUsername, message.content.slice(1)))
+            embed.setDescription(embed.description.replace(mcUsername, newIgnToSet))
             await messageRepliedTo.edit({embeds: [embed]})
+            await usernameCheck(newIgnToSet, applicationChannel)
         }
     }
 }

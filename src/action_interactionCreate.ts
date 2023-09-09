@@ -3,9 +3,9 @@ import {escapeFormatting, getDiscordDisplayName, verifyUsernameInput} from "./ut
 import * as DiscordJS from "discord.js"
 import fetch from "node-fetch"
 import {
-    ALERT_CHANNEL, APPLICATION_CHANNEL_ID,
+    ALERT_CHANNEL, APPLICATION_CHANNEL_ID, APPLICATION_NOTIFICATION_CHANNEL_ID,
     BOT_INFO_CHANNEL_ID,
-    con,
+    con, MAIN_SERVER_ID,
     MUSEUM_ROLE_ID, NO_EMOJI, RULE_PHRASE_EMOJI,
     RULE_PHRASE_TEXT, SERVER_APPLICATION_URL,
     SERVER_NAME,
@@ -13,9 +13,9 @@ import {
 } from "./index"
 
 // @ts-ignore
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from 'uuid'
 import {nameToUuid} from "./api"
-import {removeActiveApplication} from "./zTopic_application_management"
+import {applicationStatusDictionary, removeActiveApplication} from "./zTopic_application_management"
 
 export var buttonIDSet : Set<string> = new Set
 export async function interactionCreateButton(client: Client, i: Interaction) {
@@ -32,7 +32,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
     }
 
     //prepare valid button
-    const b: ButtonInteraction = i;
+    const b: ButtonInteraction = i
     console.log(`Button pressed! ${b.component.label}`)
     if (!buttonIDSet.has(b.message.id)){
         buttonIDSet.add(b.message.id)
@@ -49,7 +49,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
 
     //process custom ID (mcusername,discordId)
     console.log(`Splitting up custom id, input: ${b.customId}`)
-    const customID = b.customId;
+    const customID = b.customId
     const splitCustomId = customID.split(",")
     if (splitCustomId.length < 2) {
         console.log(`Invalid custom id input (jx0016)`)
@@ -63,6 +63,14 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
     console.log(`Processing ${mcUsername} (DcId: ${dcId}) for ${reason}. Message ID: ${messageId}`)
 
     await removeActiveApplication(messageId)
+
+    // post intentions in notification channel
+    let reasonText: string | undefined = undefined
+    if (typeof reason === 'string') reasonText = applicationStatusDictionary[reason]
+    let notificationChannel = client.channels.cache.get(APPLICATION_NOTIFICATION_CHANNEL_ID)
+    if (reasonText != null && notificationChannel != null && notificationChannel.isText()) {
+        notificationChannel.send(`${escapedMcUsername}: ${reasonText}`)
+    }
 
     let discordUser: DiscordJS.User | undefined
     let discordUsername: string = "Unknown user"
@@ -151,23 +159,9 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
         }
         //ACCOUNT LINKING
         console.log(`Attempt to register ${dcId} : ${mcUsername}`)
-        var mcuuid = ""
-        try {
-            const {name, id} = await fetch('https://api.mojang.com/users/profiles/minecraft/' + mcUsername).then((response: { json: () => any; }) => response.json())
-            mcuuid = id;
-            if (mcuuid == null){
-                accountLinkMessage = `${NO_EMOJI} Cannot retrieve Minecraft uuid`
-            }
-            else{
-                mcUsername = name
-            }
-        } catch (err) {
-            console.log(err)
-            console.log("Invalid parameters")
-            accountLinkMessage = `${NO_EMOJI} SQL Error 3, Jess needs to look into this`
-        }
-        if (mcuuid != null) {
-            con.query(`INSERT INTO accountLinking VALUES (\'${dcId}\',\'${mcuuid}\')`, function (err: any, result: any, fields: any) {
+        const mcUuid = await nameToUuid(mcUsername)
+        if (mcUuid != null) {
+            con.query(`INSERT INTO accountLinking VALUES (\'${dcId}\',\'${mcUuid}\')`, function (err: any, result: any, fields: any) {
                 if (err) {
                     if (err.errno == 1062) {
                         accountLinkMessage = "<:maybe:1024499432781254697> This account has already been linked"
@@ -192,7 +186,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
 
 
         try{
-            const theGuild = await client.guilds.fetch("706923004285812849");
+            const theGuild = await client.guilds.fetch("706923004285812849")
 
             // @ts-ignore
             console.log("attempting message send to " + discordUser.username)
@@ -224,9 +218,9 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
         }
 
         //END RESULT
-        await i.update({ content: `${escapedMcUsername} was accepted by ${b.user.username}`, components: [] });
+        await i.update({ content: `${escapedMcUsername} was accepted by ${b.user.username}`, components: [] })
 
-        let sleep = async (ms: number) => await new Promise(r => setTimeout(r,ms));
+        let sleep = async (ms: number) => await new Promise(r => setTimeout(r,ms))
         try{
             await sleep(4000)
         }
@@ -235,17 +229,17 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
 
         const acceptEmbed = new MessageEmbed()
             .setColor("#12ce0c")
-            .setTitle("Accept status for " + escapeFormatting(mcUsername))
-            .setDescription("**Added to whitelist:** " + whitelistMessage + "\n" +
-                "**Account linked:** " + accountLinkMessage + "\n" +
-                "**Person DM'd:** " + personDmMessage );
-        console.log("EMBED PREPARED")
+            .setTitle(`Accept status for ${escapeFormatting(mcUsername)}`)
+            .setDescription(`**Added to whitelist:** ${whitelistMessage}\n` +
+                `**Account linked:** ${accountLinkMessage}\n` +
+                `**Person DM'd:** ${personDmMessage}`)
+        console.log(`EMBED PREPARED`)
 
         i.channel.send({embeds: [acceptEmbed]})
     }
 
     if (reason == "rulereject") {
-        await i.update({ content: `${escapedMcUsername} was ${RULE_PHRASE_TEXT} rejected by ${b.user.username}`, components: [] });
+        await i.update({ content: `${escapedMcUsername} was ${RULE_PHRASE_TEXT} rejected by ${b.user.username}`, components: [] })
         await discordUser.send({
             content: `Thank you for your application to ${SERVER_NAME}! Unfortunately your application has been denied at this time for failure to read the rules. Once you've had a chance to look over them, please feel free to reapply!`
         }).then(result => {
@@ -311,20 +305,20 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
 
     if (commandName === "getdiscordname"){
         try {
-            await interaction.deferReply({ephemeral: true});
+            await interaction.deferReply({ephemeral: true})
             // @ts-ignore
-            if (verifyUsernameInput(options.getString("mcusername")) == false) {
+            if (!verifyUsernameInput(options.getString("mcusername"))) {
                 await interaction.editReply("Invalid name input")
-                return;
+                return
             }
             const {
                 name,
                 id
-            } = await fetch('https://api.mojang.com/users/profiles/minecraft/' + options.getString("mcusername")).then((response: { json: () => any; }) => response.json());
+            } = await fetch('https://api.mojang.com/users/profiles/minecraft/' + options.getString("mcusername")).then((response: { json: () => any }) => response.json())
 
             if (name == null && id == null) {
-                interaction.editReply("This isn't working right now, try again later or bug Jessica about it");
-                return;
+                interaction.editReply("This isn't working right now, try again later or bug Jessica about it")
+                return
             }
             console.log(`dc id to look up = ${id}`)
             var returnString = `There is no record for ${options.getString("mcusername")}`
@@ -332,10 +326,10 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
             try {
                 const result = await new Promise((resolve, reject) => {
                     con.query('SELECT discordId FROM accountLinking WHERE minecraftUuid = ?', [id], (err: any, result: any, fields: any) => {
-                        if (err) reject(err);
-                        resolve(result);
-                    });
-                });
+                        if (err) reject(err)
+                        resolve(result)
+                    })
+                })
 
                 var firstEntry: boolean = true
                 // @ts-ignore
@@ -344,7 +338,7 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
                     console.log(`dcId = ${dcId}`)
                     var discordUsername: string = "Unknown user"
                     try {
-                        const value = await client.users.fetch(dcId);
+                        const value = await client.users.fetch(dcId)
                         discordUsername = getDiscordDisplayName(value)
                         if (firstEntry) {
                             firstEntry = false
@@ -360,10 +354,10 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
                 }
 
                 console.log("about to print")
-                interaction.editReply(returnString);
-                return;
+                interaction.editReply(returnString)
+                return
             } catch (error) {
-                console.log("Error in SQL query: " + error);
+                console.log("Error in SQL query: " + error)
             }
 
         }
@@ -374,17 +368,17 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
     }
 
     if (commandName === "getminecraftname"){
-        await interaction.deferReply({ephemeral: true});
+        await interaction.deferReply({ephemeral: true})
         try{
             await con.query(`SELECT minecraftUuid FROM accountLinking WHERE discordId = '` + options.getUser("discordusername") + "'", async function (err: any, result: any, fields: any) {
                 console.log(`getminecraftname called for user ${options.getUser("discordusername")} - result of name lookup: ${result[0]['minecraftUuid']}`)
                 const mcUuid = result[0]['minecraftUuid']
                 const lookupUrl = 'https://sessionserver.mojang.com/session/minecraft/profile/' + mcUuid
                 console.log(`getminecraftname API call to ${lookupUrl}`)
-                const {id, name} = await fetch(lookupUrl).then((response: { json: () => any; }) => response.json());
+                const {id, name} = await fetch(lookupUrl).then((response: { json: () => any }) => response.json())
                 console.log(name)
                 await interaction.editReply(`Minecraft name: ${name}`)
-            });
+            })
         }
         catch (e) {
             await interaction.editReply("Failed to get Minecraft name")
@@ -411,11 +405,11 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
     }
 
     if (commandName === "bedtime"){
-        let bedtimeSuccess = false;
-        let timeoutusername = "You have";
-        let guildmember;
+        let bedtimeSuccess = false
+        let timeoutusername = "You have"
+        let guildmember
         // @ts-ignore
-        guildmember = await guild?.members.fetch(options.getUser("username"));
+        guildmember = await guild?.members.fetch(options.getUser("username"))
         // @ts-ignore
         if (options.getUser("username") === null || (!interaction.memberPermissions.has("ADMINISTRATOR") && interaction.user.id !== "430518858097360907")){
             if (member instanceof GuildMember && interaction.channel != null) {
@@ -427,32 +421,32 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
             // @ts-ignore
             bedtimeSuccess = await bedtimeUser(guildmember)
             // @ts-ignore
-            timeoutusername = guildmember.user.username + " has";
+            timeoutusername = guildmember.user.username + " has"
         }
         // @ts-ignore
         else if (interaction.memberPermissions.has("ADMINISTRATOR")){
             // @ts-ignore
             bedtimeSuccess = await bedtimeUser(guildmember)
             // @ts-ignore
-            timeoutusername = guildmember.user.username + " has";
+            timeoutusername = guildmember.user.username + " has"
             // @ts-ignore
             console.log("Admin timed out user " + options.getUser("username").username)
         }
         if (bedtimeSuccess){
             // @ts-ignore
-            await interaction.reply(timeoutusername + " requested to go to bed, see you in 6 hours!");
+            await interaction.reply(timeoutusername + " requested to go to bed, see you in 6 hours!")
         }
         else{
             // @ts-ignore
             await interaction.reply("I am unable to send " + options.getUser("username").username + " to bed")
         }
-        return;
+        return
     }
 
     //commands past this point need special perm
     if (user.id != "252818596777033729" && interaction.channelId != "805296027241676820"){
         await interaction.reply({content: "Only Jessica may control Robert here."})
-        return;
+        return
     }
 
     if (commandName === "register"){
@@ -464,18 +458,18 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
         var mcname = ""
         var mcuuid = ""
         try {
-            const {name, id} = await fetch('https://api.mojang.com/users/profiles/minecraft/' + mcuserinput).then((response: { json: () => any; }) => response.json());
-            mcuuid = id;
-            mcname = name;
+            const {name, id} = await fetch('https://api.mojang.com/users/profiles/minecraft/' + mcuserinput).then((response: { json: () => any }) => response.json())
+            mcuuid = id
+            mcname = name
             if (mcuuid == null){
                 await interaction.reply({ephemeral: true, content: "Cannot retrieve Minecraft uuid"})
-                return;
+                return
             }
         } catch (err) {
             console.log(err)
             console.log("Invalid parameters")
             interaction.reply({ephemeral: true, content: "Cannot retrieve Minecraft uuid"})
-            return;
+            return
         }
         // @ts-ignore
         var dcId = dcuserinput.id
@@ -483,13 +477,11 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
             console.log(err)
             if (err) {
                 if (err.errno == 1062) {
-                    console.log("a")
                     interaction.reply({ephemeral: true, content: "This entry already exists"})
-                    return;
+                    return
                 } else {
-                    console.log("b")
                     interaction.reply({ephemeral: true, content: "Error processing request"})
-                    return;
+                    return
                 }
             }
             var discordname = "Unknown user"
@@ -501,16 +493,16 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
             const accountEmbed = new MessageEmbed()
                 .setColor("#54fbfb")
                 .setTitle(response)
-            interaction.reply({embeds: [accountEmbed]});
-            return;
+            interaction.reply({embeds: [accountEmbed]})
+            return
         })
     }
 
     if (commandName === "unlink"){
-        const dcUser = options.getUser("discordusername");
-        const mcUser = options.getString("minecraftusername");
+        const dcUser = options.getUser("discordusername")
+        const mcUser = options.getString("minecraftusername")
         if (dcUser == null && mcUser == null){
-            interaction.reply("An input is required!")
+            await interaction.reply("An input is required!")
         }
 
         const dcId = dcUser == null ? null : dcUser.id
@@ -520,59 +512,59 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
             con.query('DELETE FROM accountLinking WHERE discordId = ?', [dcId], function (err: any, result: any, fields: any) {
                 // @ts-ignore
                 interaction.channel.send(`Deleted ${result.affectedRows} results by discord name`)
-            });
+            })
         }
 
         if (mcUser != null){
-            const {name, id} = await fetch('https://api.mojang.com/users/profiles/minecraft/' + mcUser).then((response: { json: () => any; }) => response.json());
-            const mcUuid = id;
+            const {name, id} = await fetch('https://api.mojang.com/users/profiles/minecraft/' + mcUser).then((response: { json: () => any }) => response.json())
+            const mcUuid = id
             console.log(`deleting with mcID = ${mcUuid}`)
             if (mcUuid != null)
                 con.query('DELETE FROM accountLinking WHERE minecraftUuid = ?', [mcUuid], function (err: any, result: any, fields: any) {
                     // @ts-ignore
                     interaction.channel.send(`Deleted ${result.affectedRows} results by minecraft name`)
-                });
+                })
         }
-        await interaction.reply("Processed");
-        return;
+        await interaction.reply("Processed")
+        return
     }
 
     if (commandName === "accept"){
-        const theGuild = await client.guilds.fetch("706923004285812849");
+        const theGuild = await client.guilds.fetch(MAIN_SERVER_ID)
         // @ts-ignore
-        const guildInvite = await theGuild.systemChannel.createInvite({maxAge: 604800, maxUses: 1, unique: true});
-        interaction.reply({
+        const guildInvite = await theGuild.systemChannel.createInvite({maxAge: 604800, maxUses: 1, unique: true})
+        await interaction.reply({
             content: `Thank you for your interest in ${SERVER_NAME}. Your application has been approved and you'll be whitelisted momentarily. \n` +
                 "Please join the main server discord with this invite link: https://discord.gg/" + guildInvite.code + "\n" +
                 "Other details about the server can be found in the #information tab\n" +
                 `And welcome to ${SERVER_NAME}!`
         })
-        return;
+        return
     }
 
     if (commandName === "whitelist"){
 
-        await interaction.deferReply();
+        await interaction.deferReply()
 
         if(options.getSubcommand() === "list"){
             con.query('SELECT name FROM whitelist GROUP BY name', function (err: any, result: any, fields: any) {
-                if (err) throw err;
-                const whitelistedPeople = new Set();
+                if (err) throw err
+                const whitelistedPeople = new Set()
                 for(var sqlItem of result){
-                    whitelistedPeople.add(sqlItem['name']);
+                    whitelistedPeople.add(sqlItem['name'])
                 }
-                let outputString = "";
+                let outputString = ""
                 for(var person of whitelistedPeople){
-                    outputString += person + ", ";
+                    outputString += person + ", "
                 }
-                outputString = escapeFormatting(outputString.slice(0,-2).toString()); //remove last comma and space
+                outputString = escapeFormatting(outputString.slice(0,-2).toString()) //remove last comma and space
                 const whitelistedEmbed = new MessageEmbed()
                     .setColor("#54fbfb")
                     .setTitle("Whitelisted Players")
-                    .setDescription(outputString);
-                interaction.editReply({embeds: [whitelistedEmbed]});
-                return;
-            });
+                    .setDescription(outputString)
+                interaction.editReply({embeds: [whitelistedEmbed]})
+                return
+            })
         }
 
         //check if the username is a valid input before checking the other 3 options
@@ -581,9 +573,9 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
         if(!verifyUsernameInput(options.getString("username"))){
             const whitelistedEmbed = new MessageEmbed()
                 .setColor("#e11f1f")
-                .setTitle(options.getString("username") + " is not a recognised username");
-            interaction.editReply({embeds: [whitelistedEmbed]});
-            return;
+                .setTitle(options.getString("username") + " is not a recognised username")
+            await interaction.editReply({embeds: [whitelistedEmbed]})
+            return
         }
 
         if(options.getSubcommand() === "verify"){
@@ -595,7 +587,7 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
                         .setColor("#1fe125")
                         .setTitle(result[0]["name"] + " is on the whitelist")
                     interaction.editReply({embeds: [whitelistedEmbed]})
-                    return;
+                    return
                 }
                 else {
                     const whitelistedEmbed = new MessageEmbed()
@@ -629,20 +621,20 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
                 return
             }
             con.query('SELECT name FROM whitelist WHERE name = ?', [mcUsername] , function (err: any, result: any, fields: any) {
-                if (err) throw err;
+                if (err) throw err
                 let resultCount = result.length
                 if(result.length >= 5){
                     const whitelistedEmbed = new MessageEmbed()
                         .setColor("#e11f1f")
-                        .setTitle("This cannot be done because Jess has probably done a bad, let her sort this one out (jx0020)");
-                    interaction.editReply({embeds: [whitelistedEmbed]});
+                        .setTitle("This cannot be done because Jess has probably done a bad, let her sort this one out (jx0020)")
+                    interaction.editReply({embeds: [whitelistedEmbed]})
                     return
                 }
                 else if(result.length <= 0){
                     const whitelistedEmbed = new MessageEmbed()
                         .setColor("#e11f1f")
-                        .setTitle(escapeFormatting(mcUsername) + " is not on the whitelist and cannot be removed");
-                    interaction.editReply({embeds: [whitelistedEmbed]});
+                        .setTitle(escapeFormatting(mcUsername) + " is not on the whitelist and cannot be removed")
+                    interaction.editReply({embeds: [whitelistedEmbed]})
                     return
                 }
                 else {
@@ -650,11 +642,11 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
                         if (err) throw err
                         const whitelistedEmbed = new MessageEmbed()
                             .setColor("#E11F6E")
-                            .setTitle(escapeFormatting(mcUsername) + " has been removed from the whitelist");
+                            .setTitle(escapeFormatting(mcUsername) + " has been removed from the whitelist")
                         if(resultCount > 1){
-                            whitelistedEmbed.setDescription("Note: Multiple entries have been removed");
+                            whitelistedEmbed.setDescription("Note: Multiple entries have been removed")
                         }
-                        interaction.editReply({embeds: [whitelistedEmbed]});
+                        interaction.editReply({embeds: [whitelistedEmbed]})
                         return
                     })
                 }
@@ -665,7 +657,7 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
 
     if (commandName === "purge"){
         try {
-            await interaction.deferReply();
+            await interaction.deferReply()
             let mcUsername = options.getString("mcusername")
             if (mcUsername == null) {
                 await interaction.editReply("mc username is null! (jx0027)")
@@ -678,10 +670,10 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
             const {
                 name,
                 id
-            } = await fetch('https://api.mojang.com/users/profiles/minecraft/' + options.getString("mcusername")).then((response: { json: () => any; }) => response.json())
+            } = await fetch('https://api.mojang.com/users/profiles/minecraft/' + options.getString("mcusername")).then((response: { json: () => any }) => response.json())
 
             if (name == null && id == null) {
-                interaction.editReply("This isn't working right now, try again later or bug Jessica about it")
+                await interaction.editReply("This isn't working right now, try again later or bug Jessica about it")
                 return
             }
             console.log(`dc id to look up = ${id}`)
@@ -692,8 +684,8 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
                     con.query('SELECT discordId FROM accountLinking WHERE minecraftUuid = ?', [id], (err: any, result: any, fields: any) => {
                         if (err) reject(err)
                         resolve(result)
-                    });
-                });
+                    })
+                })
 
                 // @ts-ignore
                 for (var sqlItem of result) {
@@ -713,7 +705,7 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
                     }
                     catch (error) {
                         console.log(`Error in sending message: ${error}`)
-                        await interaction.editReply(`Error in sending message: ${error}`);
+                        await interaction.editReply(`Error in sending message: ${error}`)
                         return
                     }
                 }

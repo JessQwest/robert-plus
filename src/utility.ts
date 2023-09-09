@@ -6,6 +6,10 @@ export function escapeFormatting(input: string){
         console.log("The string seems to already be escaped (jx0028)")
         return input
     }
+    // removes redundant discriminator
+    if (input.endsWith("#0")) {
+        input = input.slice(0, -2)
+    }
     return input.replaceAll("_","\\_")
 }
 
