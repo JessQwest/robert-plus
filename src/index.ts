@@ -213,6 +213,9 @@ cron.schedule('0,5,10,15,20,25,30 6 * * *', async () => {
 })
 
 process.on('unhandledRejection', error => {
+    if (debugchannel === undefined) {
+        //console.error("You are probably missing your environment key!")
+    }
     console.warn(`error time ${new Date().toISOString()}`)
     console.error('Unhandled promise rejection:', error)
     if (error == null || !(error instanceof Error)) {
@@ -223,12 +226,18 @@ process.on('unhandledRejection', error => {
 })
 
 client.on('shardError', error => {
+    if (debugchannel === undefined) {
+        //console.error("You are probably missing your environment key!")
+    }
     console.warn(`error time ${new Date().toISOString()}`)
     console.warn('A websocket connection encountered an error:', error)
     debugchannel.send(`A websocket connection encountered an error: ${error} \n\n${error.stack}`)
 })
 
 process.on('uncaughtException', error => {
+    if (debugchannel === undefined) {
+        //console.error("You are probably missing your environment key!")
+    }
     console.warn(`error time ${new Date().toISOString()}`)
     console.warn('Unhandled exception:', error)
     debugchannel.send(`Unhandled exception: ${error} \n\n${error.stack}`)
@@ -237,7 +246,10 @@ process.on('uncaughtException', error => {
 //post all errors into the log channel
 const originalError = console.error
 console.error = function (...args) {
-    debugchannel.send(`logger.error: ${args.toString()}`)
+    if (debugchannel === undefined) {
+        //console.error("You are probably missing your environment key!")
+    }
+    //debugchannel.send(`logger.error: ${args.toString()}`)
 
     // Call the original console.error function to print the error message
     originalError.apply(console, args)

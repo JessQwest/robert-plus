@@ -1,14 +1,15 @@
 import * as DiscordJS from "discord.js"
-import {Client, TextChannel} from "discord.js"
+import {Client, MessageActionRow, MessageButton, MessageEmbed, TextChannel} from "discord.js"
 import {
     APPLICATION_CHANNEL_ID,
     MAIN_ANNOUNCEMENT_CHANNEL,
-    MESSAGES_TO_ROBERT_CHANNEL_ID, ROBERT_USER_ID
+    MESSAGES_TO_ROBERT_CHANNEL_ID, ROBERT_USER_ID, SERVER_NAME
 } from "./index"
 import * as topic_application_management from "./zTopic_application_management"
 import {debug_messageCreate} from "./debug"
 import {easter_egg_messageCreate} from "./easter_egg"
 import {changeApplicationIGN} from "./zTopic_application_management"
+import {unescapeFormatting} from "./utility";
 
 
 export async function messageCreate(client: Client, message: DiscordJS.Message){
@@ -30,6 +31,22 @@ export async function messageCreate(client: Client, message: DiscordJS.Message){
     if (message.channelId == MAIN_ANNOUNCEMENT_CHANNEL) {
         await message.react("👍")
         await message.react("👎")
+    }
+
+    // if message is generateapplicationbutton then create an embed with the button
+    if (message.content === "gab" || message.content == "generateapplicationbutton") {
+        let textChannel = message.channel
+        let applicationEmbed = new MessageEmbed()
+            .setDescription("Click here to start an application!")
+            .setColor(`#10e083`)
+        const startApplicationButton = new MessageActionRow()
+            .addComponents(
+                new MessageButton()
+                    .setCustomId(`startapplication`)
+                    .setLabel(`Start an application to ${SERVER_NAME}`)
+                    .setStyle('PRIMARY'),
+            )
+        message.channel.send(({embeds: [applicationEmbed], components: [startApplicationButton]}))
     }
 
     await debug_messageCreate(message)

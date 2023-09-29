@@ -47,6 +47,12 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
         return
     }
 
+    // check if a start application button was pressed
+    if (b.customId == "startapplication") {
+        i.reply({ ephemeral: true, content: "I've sent you a DM! Start your application there! Please let a staff member know if this does not work!" });
+        return
+    }
+
     //process custom ID (mcusername,discordId)
     console.log(`Splitting up custom id, input: ${b.customId}`)
     const customID = b.customId
