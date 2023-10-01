@@ -10,6 +10,7 @@ import {debug_messageCreate} from "./debug"
 import {easter_egg_messageCreate} from "./easter_egg"
 import {changeApplicationIGN} from "./zTopic_application_management"
 import {unescapeFormatting} from "./utility";
+import {dmReceived} from "./zTopic_application_creator"
 
 
 export async function messageCreate(client: Client, message: DiscordJS.Message){
@@ -19,6 +20,7 @@ export async function messageCreate(client: Client, message: DiscordJS.Message){
     }
     // if robert is DM'd/mentioned, and it was by someone that was not himself, repost the message
     if ((message.channel.type === 'DM' || message.mentions.has(client.user.id)) && message.author != client.user) {
+        await dmReceived(message.content, message.author)
         await postRobertMessage(client, message)
     }
 
@@ -28,7 +30,7 @@ export async function messageCreate(client: Client, message: DiscordJS.Message){
     }
 
     // thumbs up and thumbs down reactions if the message is in announcements
-    if (message.channelId == MAIN_ANNOUNCEMENT_CHANNEL) {
+    if (message.channelId == MAIN_ANNOUNCEMENT_CHANNEL && message.author.id != client.user.id) {
         await message.react("👍")
         await message.react("👎")
     }
@@ -42,7 +44,7 @@ export async function messageCreate(client: Client, message: DiscordJS.Message){
         const startApplicationButton = new MessageActionRow()
             .addComponents(
                 new MessageButton()
-                    .setCustomId(`startapplication`)
+                    .setCustomId(`application,start`)
                     .setLabel(`Start an application to ${SERVER_NAME}`)
                     .setStyle('PRIMARY'),
             )

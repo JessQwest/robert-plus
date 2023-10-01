@@ -22,7 +22,7 @@ export function capitalizeFirstLetter(input: string) {
 }
 
 export function verifyUsernameInput(username: String){
-    const regex = new RegExp('^[a-zA-Z0-9_]{1,16}$')
+    const regex = new RegExp('^[a-zA-Z0-9_]{2,16}$')
     if (!regex.test(<string>username)) {
         console.log(`verifyUsernameInput false for ${username}`)
         return false

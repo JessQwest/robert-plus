@@ -31,7 +31,7 @@ export async function nameToUuid(username: String | null): Promise<string>{
     throw new Error(`An unhandled error has occurred, bug Jessica (jx0002)`)
 }
 
-export async function usernameCheck(username: string, textChannel: DiscordJS.TextChannel): Promise<Boolean> {
+export async function usernameCheck(username: string, textChannel: DiscordJS.TextChannel | undefined = undefined): Promise<Boolean> {
     return new Promise(async (resolve, reject) => {
         const url = `https://api.mojang.com/users/profiles/minecraft/${username}`
 
@@ -44,7 +44,7 @@ export async function usernameCheck(username: string, textChannel: DiscordJS.Tex
                     .setColor("#f5bc06")
                     .setTitle("Minecraft Username Check Failed")
                     .setDescription(`⚠️ ${data.errorMessage} ⚠️`)
-                textChannel.send({embeds: [errorEmbed]})
+                if (textChannel != undefined) textChannel.send({embeds: [errorEmbed]})
                 resolve(false)
             } else {
                 resolve(true)

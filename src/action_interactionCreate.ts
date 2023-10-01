@@ -4,7 +4,7 @@ import * as DiscordJS from "discord.js"
 import fetch from "node-fetch"
 import {
     ALERT_CHANNEL, APPLICATION_CHANNEL_ID, APPLICATION_NOTIFICATION_CHANNEL_ID,
-    BOT_INFO_CHANNEL_ID,
+    BOT_INFO_CHANNEL_ID, client,
     con, MAIN_SERVER_ID,
     MUSEUM_ROLE_ID, NO_EMOJI, RULE_PHRASE_EMOJI,
     RULE_PHRASE_TEXT, SERVER_APPLICATION_URL,
@@ -16,6 +16,13 @@ import {
 import { v4 as uuidv4 } from 'uuid'
 import {nameToUuid} from "./api"
 import {applicationStatusDictionary, removeActiveApplication} from "./zTopic_application_management"
+import {
+    buttonCancelApplication,
+    buttonGotoNextQuestion,
+    buttonGotoPreviousQuestion,
+    buttonPostApplication, buttonSkipQuestion,
+    createApplication, dmReceived
+} from "./zTopic_application_creator"
 
 export var buttonIDSet : Set<string> = new Set
 export async function interactionCreateButton(client: Client, i: Interaction) {
@@ -28,12 +35,58 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
     }
     if (i.channel == null) {
         console.log("Interaction created but channel is unknown! (jx0013)")
+        await i.deferUpdate()
+        return
+    }
+    if (i.message.author != client.user) {
+        console.log("Interaction created but message author is not bot!")
         return
     }
 
     //prepare valid button
     const b: ButtonInteraction = i
     console.log(`Button pressed! ${b.component.label}`)
+
+    //process custom ID
+    console.log(`Splitting up custom id, input: ${b.customId}`)
+    const customID = b.customId
+    const splitCustomId = customID.split(",")
+
+    // check if an application button was pressed
+    if (splitCustomId[0] === "application") {
+        if (splitCustomId[1] === "start") {
+            const startApplicationResponse = await createApplication(i.user)
+            await i.reply({ ephemeral: true, content: startApplicationResponse })
+            return
+        }
+        if (splitCustomId[1] === "previous") {
+            await buttonGotoPreviousQuestion(i.user)
+            await i.deferUpdate()
+            return
+        }
+        if (splitCustomId[1] === "next") {
+            await buttonGotoNextQuestion(i.user)
+            await i.deferUpdate()
+            return
+        }
+        if (splitCustomId[1] === "submit") {
+            await buttonPostApplication(i.user)
+            await i.deferUpdate()
+            return
+        }
+        if (splitCustomId[1] === "cancel") {
+            await buttonCancelApplication(i.user)
+            await i.deferUpdate()
+            return
+        }
+        if (splitCustomId[1] === "skip") {
+            await buttonSkipQuestion(i.user)
+            await i.deferUpdate()
+            return
+        }
+    }
+
+    // check for button clash
     if (!buttonIDSet.has(b.message.id)){
         buttonIDSet.add(b.message.id)
     }
@@ -47,16 +100,6 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
         return
     }
 
-    // check if a start application button was pressed
-    if (b.customId == "startapplication") {
-        i.reply({ ephemeral: true, content: "I've sent you a DM! Start your application there! Please let a staff member know if this does not work!" });
-        return
-    }
-
-    //process custom ID (mcusername,discordId)
-    console.log(`Splitting up custom id, input: ${b.customId}`)
-    const customID = b.customId
-    const splitCustomId = customID.split(",")
     if (splitCustomId.length < 2) {
         console.log(`Invalid custom id input (jx0016)`)
     }
