@@ -64,10 +64,11 @@ export async function processNewApplication(message: DiscordJS.Message) {
             `Age: ${application.age}\n` +
             `${capitalizeFirstLetter(RULE_PHRASE_TEXT)} Detected: ${rulePhraseDetectedString}\n` +
             `Application Size: ${application.applicationLengthDescription}`)
-        .setFooter(`${application.discordID},${message.id}`)
+        .setFooter({text: `${application.discordID},${message.id}`})
 
     let votingIgn: string = ""
     let applicationMessageId: string = ""
+    let applicationSummaryId: string = ""
     let votingMessageUrl: string = ""
     let votingMessageTimestamp: number = 0
 
@@ -77,11 +78,13 @@ export async function processNewApplication(message: DiscordJS.Message) {
             if (voteMessage instanceof Message) {
                 votingIgn = application.ign
                 applicationMessageId = message.id
+                applicationSummaryId = voteMessage.id
                 votingMessageUrl = voteMessage.url
                 votingMessageTimestamp = voteMessage.createdTimestamp
                 activeApplications.push(new ActiveApplication(
                     votingIgn,
                     applicationMessageId,
+                    applicationSummaryId,
                     votingMessageUrl,
                     votingMessageTimestamp
                 ))
@@ -206,13 +209,15 @@ class Application {
 class ActiveApplication {
     public name: string
     public applicationMessageId: string
+    public applicationSummaryId: string
     public url: string
     public timestamp: number
     public lastNotificationDatetime: Date = new Date()
     public remindedCount: number = 0
-    constructor(name: string, applicationMessageId: string, url: string, timestamp: number) {
+    constructor(name: string, applicationMessageId: string, applicationSummaryId: string, url: string, timestamp: number) {
         this.name = name
         this.applicationMessageId = applicationMessageId
+        this.applicationSummaryId = applicationSummaryId
         this.url = url
         this.timestamp = timestamp
     }

@@ -37,7 +37,7 @@ export async function dailyHousekeepTask() {
 
 async function postApplicationVotingReminder() {
     const applicationGuild = client.guilds.cache.get(APPLICATION_SERVER_ID)
-    let appChannel = client.channels.cache.get(APPLICATION_CHANNEL_ID)
+    let appChannel = client.channels.cache.get(APPLICATION_VOTING_CHANNEL_ID)
     const applicationVotingChannel = client.channels.cache.get(APPLICATION_VOTING_CHANNEL_ID)
     if (applicationVotingChannel == null || !(applicationVotingChannel instanceof TextChannel)) {
         console.error(`APPLICATION NOTIFICATION CHANNEL NULL (jx0047)`)
@@ -59,7 +59,7 @@ async function postApplicationVotingReminder() {
         const timeDifferenceHours = timeDifferenceMilliseconds / 1000 / 60 / 60
         if (timeDifferenceHours >= APPLICATION_VOTE_REMINDER_THRESHOLD_HOURS) {
             // check who has reacted/voted so far
-            let message = appChannel.messages.cache.get(application.applicationMessageId)
+            let message = appChannel.messages.cache.get(application.applicationSummaryId)
             if (message == null) continue
             let reactionIds: String[] = []
             message.reactions.cache.forEach(r => {
