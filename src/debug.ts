@@ -10,6 +10,7 @@ import {
     scanApplication
 } from "./zTopic_application_management"
 import {nameToUuid} from "./api"
+import {dailyHousekeepTask} from "./scheduled_jobs"
 
 export async function debug_messageCreate(message: DiscordJS.Message) {
     //test function
@@ -75,6 +76,11 @@ export async function debug_messageCreate(message: DiscordJS.Message) {
 
     if (message.content === "dbreset" && message.author.id === "252818596777033729" && message.channelId === DEBUG_CHANNEL_ID){
         con.reset()
+    }
+
+    if (message.content === "dailyhousekeep" && message.author.id === "252818596777033729" && message.channelId === DEBUG_CHANNEL_ID){
+        await dailyHousekeepTask()
+        return
     }
 
     if (message.content === "debug" && message.author.id === "252818596777033729" && message.channelId === DEBUG_CHANNEL_ID) {

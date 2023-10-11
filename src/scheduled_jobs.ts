@@ -105,27 +105,31 @@ async function removeApplicationMembers() {
         console.error(`APPLICATION GUILD OR MAIN GUILD NULL (jx0043)`)
         return
     }
-    applicationGuild.members.cache.forEach(async member => {
+    for (const memberClump of applicationGuild.members.cache) {
+            let member = memberClump[1]
             if (member.joinedTimestamp == null) {
-                sendApplicationNotification(`${member.user.username} doesn't have a joined timestamp! @Jessica`)
+                await sendApplicationNotification(`${member.user.username} doesn't have a joined timestamp! @Jessica`)
             } else {
                 let daysJoined = (Date.now() - member.joinedTimestamp) / millsecondsInDay
                 daysJoined = Math.round(daysJoined)
                 console.log(`${member.user.username} joined at ${member.joinedTimestamp} - ${daysJoined} days ago`)
                 // if the user has no roles (not staff) and has been in the server for 30 days (applicants) or 3 days (in the main server) kick them
                 let kickReason = ""
-                let otherUser = await mainGuild.members.fetch(member.id)
-                if (member.roles.cache.size <= 1 && daysJoined >= 30) kickReason = `${escapeFormatting(member.user.username)} joined ${daysJoined} Days ago and is being kicked for inactivity.`
-                else if (member.roles.cache.size <= 1 && daysJoined >= 3 && otherUser) kickReason = `${escapeFormatting(member.user.username)} joined ${daysJoined} Days ago and is being kicked as they are in the main server.`
+                let otherUser
+                if (await mainGuild.members.cache.get(member.id)) {
+                    console.log(`${member.user.username} is in the main guild`)
+                    otherUser = mainGuild.members.fetch(member.id)
+                    if (member.roles.cache.size <= 1 && daysJoined >= 30) kickReason = `${escapeFormatting(member.user.username)} joined ${daysJoined} Days ago and is being kicked for inactivity.`
+                    else if (member.roles.cache.size <= 1 && daysJoined >= 3 && otherUser) kickReason = `${escapeFormatting(member.user.username)} joined ${daysJoined} Days ago and is being kicked as they are in the main server.`
 
-                if (kickReason != "") {
-                    console.log(`${member.user.username} has ${member.roles.cache.size} roles: ${JSON.stringify(member.roles.cache)}`)
-                    sendApplicationNotification(kickReason)
-                    member.kick(kickReason)
+                    if (kickReason != "") {
+                        console.log(`${member.user.username} has ${member.roles.cache.size} roles: ${JSON.stringify(member.roles.cache)}`)
+                        await sendApplicationNotification(kickReason)
+                        member.kick(kickReason)
+                    }
                 }
             }
         }
-    )
 }
 
 async function removeMuseumDayPasses() {
