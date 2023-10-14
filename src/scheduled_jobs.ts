@@ -1,5 +1,5 @@
 import {
-    APPLICATION_CHANNEL_ID, APPLICATION_MAX_REMIND_TIMES,
+    APPLICATION_MAX_REMIND_TIMES,
     APPLICATION_NOTIFICATION_CHANNEL_ID,
     APPLICATION_SERVER_ID,
     APPLICATION_VOTE_REMINDER_THRESHOLD_HOURS, APPLICATION_VOTER_ROLE_ID,
@@ -118,7 +118,7 @@ async function removeApplicationMembers() {
                 let otherUser
                 if (await mainGuild.members.cache.get(member.id)) {
                     console.log(`${member.user.username} is in the main guild`)
-                    otherUser = mainGuild.members.fetch(member.id)
+                    otherUser = await mainGuild.members.fetch(member.id)
                     if (member.roles.cache.size <= 1 && daysJoined >= 30) kickReason = `${escapeFormatting(member.user.username)} joined ${daysJoined} Days ago and is being kicked for inactivity.`
                     else if (member.roles.cache.size <= 1 && daysJoined >= 3 && otherUser) kickReason = `${escapeFormatting(member.user.username)} joined ${daysJoined} Days ago and is being kicked as they are in the main server.`
 

@@ -1,23 +1,28 @@
 import * as DiscordJS from "discord.js"
-import {unescapeFormatting, verifyUsernameInput} from "./utility"
-import {MessageActionRow, MessageButton, MessageEmbed, TextChannel} from "discord.js"
+import {containsRulePhrase, unescapeFormatting, verifyUsernameInput} from "./utility"
+import {MessageActionRow, MessageButton, MessageEmbed} from "discord.js"
 import {
     APPLICATION_CHANNEL_ID,
     APPLICATION_NOTIFICATION_CHANNEL_ID,
-    APPLICATION_VOTING_CHANNEL_ID,
     client,
     SERVER_NAME
 } from "./index"
 import {usernameCheck} from "./api"
+import {processNewApplication} from "./zTopic_application_management";
 
-class InProgressApplication {
+export class InProgressApplication {
     public discordId: string
+    public discordUsername: string
+    public uniqueIdentifier: string = "" // their IGN
+    public messageId : string = ""
     public startTimestamp: number
     public currentQuestionNo: number = 0
+    public rulePhraseDetected: boolean = false
     public answers: string[] = []
     public applicationStatus = "active"
-    constructor(discordId: string) {
+    constructor(discordId: string, discordUsername: string) {
         this.discordId = discordId
+        this.discordUsername = discordUsername
         this.startTimestamp = Math.floor(Date.now() / 1000)
         this.currentQuestionNo = 0
         this.answers = []
@@ -27,24 +32,40 @@ class InProgressApplication {
     }
 }
 
-const questions = [
-    ["What is your Minecraft IGN?", "IGN"],
-    ["What is your age?", "NUMBER"],
-    ["Why do you want to join this server?", "TEXT"],
-    ["What rule do you value most when playing on an SMP?", "TEXT"],
-    ["What are some of your hobbies outside of minecraft?", "TEXT"],
-    ["Are you a streamer or a YouTuber? If so include a link", "TEXT"],
-    ["How did you find the server? (Reddit/friend/website etc) If it's a friend, please specify who.", "TEXT"],
-    ["Have you read and understood the rules?", "TEXT"],
-    ["Include any additional information or questions here", "OPTIONAL_TEXT"]
+export const REQ_IGN = "IGN"
+export const REQ_NUMBER = "NUMBER"
+export const REQ_TEXT = "TEXT"
+export const REQ_OPTIONAL_TEXT = "OPTIONAL_TEXT"
+
+export const VISIBILITY_NONE = "NONE"
+export const VISIBILITY_REVIEW_ONLY = "REVIEW_ONLY"
+export const VISIBILITY_NOTIFICATION_ONLY = "NOTIFICATION_ONLY"
+export const VISIBILITY_ALL = "ALL"
+export const VISIBILITY_ALL_UNIQUE_IDENTIFIER = "ALL_UNIQUE_IDENTIFIER"
+
+// [Question text, validation type, visibility, short identifier]
+// visibility indicates if the response is shown in the summary to application reviewers, notification viewers, none or both
+// use the all unique identifier to establish their name for voting purposes
+export const questions = [
+    ["What is your Minecraft IGN?", REQ_IGN, VISIBILITY_ALL_UNIQUE_IDENTIFIER, "IGN"],
+    ["What is your age?", REQ_NUMBER, VISIBILITY_REVIEW_ONLY, "Age"],
+    ["Why do you want to join this server?", REQ_TEXT, VISIBILITY_NONE, "Reason for joining"],
+    ["What rule do you value most when playing on an SMP?", REQ_TEXT, VISIBILITY_NONE, "Most valued rule"],
+    ["What are some of your hobbies outside of minecraft?", REQ_TEXT, VISIBILITY_NONE, "Hobbies"],
+    ["Are you a streamer or a YouTuber? If so include a link", REQ_TEXT, VISIBILITY_NONE, "Content creation"],
+    ["How did you find the server? (Reddit/friend/website etc) If it's a friend, please specify who.", REQ_TEXT, VISIBILITY_NOTIFICATION_ONLY, "Referral"],
+    ["Have you read and understood the rules?", REQ_TEXT, VISIBILITY_NONE, "Read rules"],
+    ["Include any additional information or questions here", REQ_OPTIONAL_TEXT, VISIBILITY_NONE, "Additional information"]
 ]
 
 const inputTypes = [
-    ["IGN", "your IGN, which is composed of letters, numbers, and underscores"],
-    ["NUMBER", "a number"],
-    ["TEXT", "some text (less than 800 characters)"],
-    ["OPTIONAL_TEXT", "some text or click the button to skip"]
+    [REQ_IGN, "your IGN, which is composed of letters, numbers, and underscores"],
+    [REQ_NUMBER, "a number"],
+    [REQ_TEXT, "some text (less than 800 characters)"],
+    [REQ_OPTIONAL_TEXT, "some text or click the button to skip"]
 ]
+
+export const UNIQUE_IDENTIFIER_ID = questions.findIndex(item => item[2] === VISIBILITY_ALL_UNIQUE_IDENTIFIER)
 
 function inputTypeLookup(inputType: string): string {
     for (const item of inputTypes) {
@@ -65,7 +86,7 @@ export async function createApplication(user: DiscordJS.User): Promise<string> {
         return "You already have an application in progress!"
     }
 
-    const newApplication = new InProgressApplication(user.id)
+    const newApplication = new InProgressApplication(user.id, user.username)
     inProgressApplications.push(newApplication)
 
     try {
@@ -141,7 +162,7 @@ async function validateAnswer(text: string, rule: String): Promise<number> {
     if (rule === "IGN") {
         text = unescapeFormatting(text)
         const a = await usernameCheck(text)
-        const b = await verifyUsernameInput(text)
+        const b = verifyUsernameInput(text)
         if (!a) {
             return 2
         }
@@ -206,7 +227,7 @@ async function dmUserApplicationSubmissionConfirmation(user: DiscordJS.User) {
 function generateButtons(playerApplication: InProgressApplication, questionNo: number): MessageActionRow {
     const messageActionRow = new MessageActionRow()
 
-    if (questionNo < questions.length && questions[questionNo][1] === "OPTIONAL_TEXT") {
+    if (questionNo < questions.length && questions[questionNo][1] === REQ_OPTIONAL_TEXT) {
         const skipButton = new MessageButton()
             .setCustomId(`application,skip`)
             .setLabel(`⏭ Skip question`)
@@ -307,13 +328,22 @@ export async function buttonPostApplication(user: DiscordJS.User) {
         .setFooter({text: `Applicant: ${user.username}\nID: ${user.id}`})
         .setColor(`#ff1541`)
 
+    if (containsRulePhrase(application)) playerApplication.rulePhraseDetected = true
+
     let appChannel = client.channels.cache.get(APPLICATION_CHANNEL_ID)
     if (appChannel == null || !appChannel.isText()) {
         console.error(`APP CHANNEL NOT VALID NULL (jx0049)`)
         return
     }
 
-    appChannel.send({embeds: [finalApplicationEmbed]})
+    await appChannel.send({embeds: [finalApplicationEmbed]}).then(message => {
+        playerApplication.messageId = message.id
+    })
+
+    playerApplication.uniqueIdentifier = playerApplication.answers[UNIQUE_IDENTIFIER_ID]
+
+    await processNewApplication(playerApplication)
+
     playerApplication.applicationStatus = "submitted"
     await user.send(`Your application has been submitted.`)
 

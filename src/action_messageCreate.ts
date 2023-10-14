@@ -1,15 +1,12 @@
 import * as DiscordJS from "discord.js"
 import {Client, MessageActionRow, MessageButton, MessageEmbed, TextChannel} from "discord.js"
 import {
-    APPLICATION_CHANNEL_ID,
     MAIN_ANNOUNCEMENT_CHANNEL,
     MESSAGES_TO_ROBERT_CHANNEL_ID, ROBERT_USER_ID, SERVER_NAME
 } from "./index"
-import * as topic_application_management from "./zTopic_application_management"
 import {debug_messageCreate} from "./debug"
 import {easter_egg_messageCreate} from "./easter_egg"
 import {changeApplicationIGN} from "./zTopic_application_management"
-import {unescapeFormatting} from "./utility";
 import {dmReceived} from "./zTopic_application_creator"
 
 
@@ -37,7 +34,6 @@ export async function messageCreate(client: Client, message: DiscordJS.Message){
 
     // if message is generateapplicationbutton then create an embed with the button
     if (message.content === "gab" || message.content == "generateapplicationbutton") {
-        let textChannel = message.channel
         let applicationEmbed = new MessageEmbed()
             .setDescription("Click here to start an application!")
             .setColor(`#10e083`)
@@ -53,11 +49,6 @@ export async function messageCreate(client: Client, message: DiscordJS.Message){
 
     await debug_messageCreate(message)
     await easter_egg_messageCreate(message)
-
-    if(message.channelId === APPLICATION_CHANNEL_ID && message.embeds.length >= 1){
-        if (message.embeds[0].description != null && message.embeds[0].description.includes("What is your Minecraft IGN?"))
-            await topic_application_management.processNewApplication(message)
-    }
 }
 
 async function postRobertMessage(client: DiscordJS.Client, message: DiscordJS.Message) {

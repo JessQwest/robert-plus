@@ -1,15 +1,11 @@
 import {client, con, DEBUG_CHANNEL_ID, SERVER_NAME} from "./index"
-import {getDiscordDisplayName, unescapeFormatting, verifyUsernameInput} from "./utility"
+import {containsRulePhrase, getDiscordDisplayName, unescapeFormatting, verifyUsernameInput} from "./utility"
 import {buttonIDSet} from "./action_interactionCreate"
-import {Application, MessageEmbed, TextChannel} from "discord.js"
+import {MessageEmbed, TextChannel} from "discord.js"
 import * as DiscordJS from "discord.js"
 import {
-    changeApplicationIGN,
-    checkApplicationHistory,
     postApplicationHistory,
-    scanApplication
 } from "./zTopic_application_management"
-import {nameToUuid} from "./api"
 import {dailyHousekeepTask} from "./scheduled_jobs"
 
 export async function debug_messageCreate(message: DiscordJS.Message) {
@@ -56,20 +52,19 @@ export async function debug_messageCreate(message: DiscordJS.Message) {
         }
 
         let applicationInsertStatement: string = ""
-        await messages.forEach(message => {
+        messages.forEach(message => {
             // if an embed (app posted by bot) attempt to scan for user information
             if (message.embeds.length >= 1) {
                 if (message.embeds[0] == null) {
                     console.error("jx0040")
                 }
-                scanApplication(message.embeds[0]).then(async app => {
+                scanApplication(message.embeds[0]).then(async (app) => {
                     let playerIgn = unescapeFormatting(app.ign)
                     if (!verifyUsernameInput(playerIgn)) playerIgn = 'null'
                     else playerIgn = `'${playerIgn}'`
                     applicationInsertStatement += (`insert into applicationhistory(dcUserId, messageId, messageTimestamp, messageURL, mcUsername) values ('${app.discordID}', '${message.id}', '${message.createdTimestamp}', '${message.url}', ${playerIgn});\n`)
                 })
-            }
-            else applicationInsertStatement += (`insert into applicationhistory(dcUserId, messageId, messageTimestamp, messageURL) values ('${message.author.id}', '${message.id}', '${message.createdTimestamp}', '${message.url}');\n`)
+            } else applicationInsertStatement += (`insert into applicationhistory(dcUserId, messageId, messageTimestamp, messageURL) values ('${message.author.id}', '${message.id}', '${message.createdTimestamp}', '${message.url}');\n`)
         })
         console.log(applicationInsertStatement)
     }
@@ -88,7 +83,7 @@ export async function debug_messageCreate(message: DiscordJS.Message) {
         var discordUser
         var discordUsername = "Unknown user"
         try {
-            const a = client.users.fetch('1017115584665755710').then(value => {
+            client.users.fetch('1017115584665755710').then(value => {
                 discordUser = value
                 discordUsername = getDiscordDisplayName(discordUser)
             })
@@ -144,6 +139,63 @@ export async function debug_messageCreate(message: DiscordJS.Message) {
 
     // if replying to an application with an question mark, pull the history
     if (message.content.at(0) == "?" && (message.author.id == "252818596777033729" || message.channelId == "805296027241676820")){
-        if (message.channel instanceof TextChannel) await postApplicationHistory(message, message.channel, message.content.slice(1), message.content.slice(1))
+        if (message.channel instanceof TextChannel) await postApplicationHistory(message.channel, message.content.slice(1), message.content.slice(1))
+    }
+}
+
+export async function scanApplication(receivedEmbed: MessageEmbed): Promise<Application> {
+
+    if(receivedEmbed.description == null || !receivedEmbed.description.includes("What is your Minecraft IGN?")){
+        // @ts-ignore
+        console.log(`Invalid application! (jx0039) - ${receivedEmbed.description.slice(0,30)}...`)
+        throw `Invalid application! (jx0039)`
+    }
+
+    const ignBlockText = receivedEmbed.description.match("What is your Minecraft IGN\\?:(.|\\n)*What is your age\\?:")?.toString()
+    const ign = ignBlockText?.slice(29,-22) ?? "Unknown"
+
+    const ageBlockText = receivedEmbed.description.match("What is your age\\?:(.|\\n)*Why do you want to join this server\\?:")?.toString()
+    const age = ageBlockText?.slice(19,-41) ?? "Error"
+
+    const referralText = receivedEmbed.description.match("please specify who\\.:(.|\\n)*Have you read and understood")?.toString()
+    const referral = referralText?.slice(21,-32) ?? "Error"
+
+    const discordNameBlockText = receivedEmbed.footer?.text.match("Applicant:\\s*.+\\s*ID")?.toString()
+    const discordName = discordNameBlockText?.slice(11,-3) ?? "Error"
+
+    const discordID = receivedEmbed.footer?.text.slice(-19).trim() ?? "Error"
+
+    let applicationLengthDescription: string
+    const applicationLength = receivedEmbed.description.length
+    if (applicationLength < 590) applicationLengthDescription = "Impressively bad"
+    else if (applicationLength < 775) applicationLengthDescription = "Yikes"
+    else if (applicationLength < 820) applicationLengthDescription = "Basic"
+    else if (applicationLength < 1013) applicationLengthDescription = "Decent"
+    else if (applicationLength < 1253) applicationLengthDescription = "Good"
+    else if (applicationLength < 1553) applicationLengthDescription = "Very good"
+    else if (applicationLength < 1853) applicationLengthDescription = "Amazing!"
+    else applicationLengthDescription = "WOAH!"
+
+    const rulePhraseDetected: boolean = containsRulePhrase(receivedEmbed.description)
+
+    return new Application(ign, age, referral, discordName, discordID, applicationLengthDescription, rulePhraseDetected)
+}
+
+class Application {
+    public ign: string
+    public age: string
+    public referral: string
+    public discordName: string
+    public discordID: string
+    public applicationLengthDescription: string
+    public rulePhraseDetected: boolean
+    constructor(ign: string, age: string, referral: string, discordName: string, discordID: string, applicationLengthDescription: string, rulePhraseDetected: boolean) {
+        this.ign = ign
+        this.age = age
+        this.referral = referral
+        this.discordName = discordName
+        this.discordID = discordID
+        this.applicationLengthDescription = applicationLengthDescription
+        this.rulePhraseDetected = rulePhraseDetected
     }
 }

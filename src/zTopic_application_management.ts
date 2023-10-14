@@ -9,7 +9,6 @@ import {
 } from "discord.js"
 import {
     capitalizeFirstLetter,
-    containsRulePhrase,
     escapeFormatting,
     unescapeFormatting,
     verifyUsernameInput
@@ -25,6 +24,13 @@ import {
     YES_EMOJI
 } from "./index"
 import {nameToUuid, usernameCheck} from "./api"
+import {
+    InProgressApplication,
+    questions,
+    VISIBILITY_ALL, VISIBILITY_ALL_UNIQUE_IDENTIFIER,
+    VISIBILITY_NOTIFICATION_ONLY,
+    VISIBILITY_REVIEW_ONLY
+} from "./zTopic_application_creator";
 
 export const applicationStatusDictionary: Record<string, string> = {
     'accept': 'Application Accepted',
@@ -37,7 +43,7 @@ export const applicationStatusDictionary: Record<string, string> = {
 
 export var activeApplications: ActiveApplication[] = []
 
-export async function processNewApplication(message: DiscordJS.Message) {
+export async function processNewApplication(application: InProgressApplication) {
     const applicationChannel = client.channels.cache.get(APPLICATION_VOTING_CHANNEL_ID) //channel to vote in
     const applicationNotificationChannel = client.channels.cache.get(APPLICATION_NOTIFICATION_CHANNEL_ID) //channel to notify basic app info
     if (applicationChannel == null || !(applicationChannel instanceof TextChannel)) {
@@ -50,21 +56,46 @@ export async function processNewApplication(message: DiscordJS.Message) {
     }
     const applicationTextChannel: TextBasedChannel = applicationChannel as DiscordJS.TextChannel
 
-    const applicationEmbedToScan = message.embeds[0]
-    const application = await scanApplication(applicationEmbedToScan)
+    let applicationReviewDescription = ""
+    let applicationNotificationDescription = ""
+    let totalApplicationLength = 0
+
+    for (let i = 0; i < application.answers.length; i++) {
+        let currentQuestion = questions[i]
+        let applicantAnswer = application.answers[i]
+        totalApplicationLength += applicantAnswer.length
+        let questionShortText = currentQuestion[3]
+        let visibility = currentQuestion[2]
+        if (visibility == VISIBILITY_REVIEW_ONLY || visibility == VISIBILITY_ALL || visibility == VISIBILITY_ALL_UNIQUE_IDENTIFIER) {
+            applicationReviewDescription += `${questionShortText}: ${applicantAnswer}\n`
+        }
+        if (visibility == VISIBILITY_NOTIFICATION_ONLY || visibility == VISIBILITY_ALL || visibility == VISIBILITY_ALL_UNIQUE_IDENTIFIER) {
+            applicationNotificationDescription += `${questionShortText}: ${applicantAnswer}\n`
+        }
+    }
+
+    let applicationLengthDescription: string
+    const applicationLength = totalApplicationLength
+    if (applicationLength < 110) applicationLengthDescription = "Impressively bad"
+    else if (applicationLength < 300) applicationLengthDescription = "Yikes"
+    else if (applicationLength < 360) applicationLengthDescription = "Basic"
+    else if (applicationLength < 530) applicationLengthDescription = "Decent"
+    else if (applicationLength < 770) applicationLengthDescription = "Good"
+    else if (applicationLength < 1080) applicationLengthDescription = "Very good"
+    else if (applicationLength < 1350) applicationLengthDescription = "Amazing!"
+    else applicationLengthDescription = "WOAH!"
 
     const rulePhraseDetectedString: string = application.rulePhraseDetected ? "Yes" : "No"
+
+    applicationReviewDescription = `Discord Name: ${application.discordUsername}\n${applicationReviewDescription}${capitalizeFirstLetter(RULE_PHRASE_TEXT)}s Detected: ${rulePhraseDetectedString}\nApplication Size: ${applicationLengthDescription}`
+    applicationNotificationDescription = `Discord Name: ${application.discordUsername}\n${applicationNotificationDescription}${capitalizeFirstLetter(RULE_PHRASE_TEXT)}s Detected: ${rulePhraseDetectedString}`
+
 
     const applicationEmbedToPost = new MessageEmbed()
         .setColor("#bdbc4b")
         .setTitle("New Application - Please vote")
-        .setDescription(
-            `IGN: ${escapeFormatting(application.ign)}\n` +
-            `Discord name: ${escapeFormatting(application.discordName)}\n` +
-            `Age: ${application.age}\n` +
-            `${capitalizeFirstLetter(RULE_PHRASE_TEXT)} Detected: ${rulePhraseDetectedString}\n` +
-            `Application Size: ${application.applicationLengthDescription}`)
-        .setFooter({text: `${application.discordID},${message.id}`})
+        .setDescription(applicationReviewDescription)
+        .setFooter({text: `${application.discordId},${application.messageId}`})
 
     let votingIgn: string = ""
     let applicationMessageId: string = ""
@@ -72,12 +103,12 @@ export async function processNewApplication(message: DiscordJS.Message) {
     let votingMessageUrl: string = ""
     let votingMessageTimestamp: number = 0
 
-    applicationChannel.send("@everyone")
-    applicationChannel.send({embeds: [applicationEmbedToPost]})
+    await applicationChannel.send("@everyone")
+    await applicationChannel.send({embeds: [applicationEmbedToPost]})
         .then(function (voteMessage: { react: (arg0: string) => void }){
             if (voteMessage instanceof Message) {
-                votingIgn = application.ign
-                applicationMessageId = message.id
+                votingIgn = application.uniqueIdentifier
+                applicationMessageId = application.messageId
                 applicationSummaryId = voteMessage.id
                 votingMessageUrl = voteMessage.url
                 votingMessageTimestamp = voteMessage.createdTimestamp
@@ -96,29 +127,25 @@ export async function processNewApplication(message: DiscordJS.Message) {
     const basicApplicationEmbed = new MessageEmbed()
         .setColor("#bdbc4b")
         .setTitle("A new application has been sent")
-        .setDescription(
-            `IGN: ${escapeFormatting(application.ign)}\n` +
-            `Discord name: ${escapeFormatting(application.discordName)}\n` +
-            `Referral: ${application.referral}\n` +
-            `${capitalizeFirstLetter(RULE_PHRASE_TEXT)} Detected: ${rulePhraseDetectedString}\n`)
+        .setDescription(applicationNotificationDescription)
 
-    applicationNotificationChannel.send({embeds: [basicApplicationEmbed]})
+    await applicationNotificationChannel.send({embeds: [basicApplicationEmbed]})
 
-    // check if mojang recognizes the username or if its spelt correctly
-    let usernameValid: Boolean = await usernameCheck(application.ign, applicationChannel)
-    if (!usernameValid && !verifyUsernameInput(application.ign)){
-        applicationChannel.send("This IGN doesnt look quite right. Reply to the application message with !(ign) if it is wrong")
+    // check if Mojang recognizes the username or if its spelt correctly
+    let usernameValid: Boolean = await usernameCheck(application.uniqueIdentifier, applicationChannel)
+    if (!usernameValid && !verifyUsernameInput(application.uniqueIdentifier)){
+        await applicationChannel.send("This IGN doesnt look quite right. Reply to the application message with !(ign) if it is wrong")
     }
 
     if (!application.rulePhraseDetected){
-        postRuleRejectButtons(application.ign,application.discordID,applicationTextChannel, message.id)
+        postRuleRejectButtons(application.uniqueIdentifier ,application.discordId, applicationTextChannel, application.messageId)
     }
 
-    let mcUuid = await nameToUuid(application.ign) ?? "unknown"
+    let mcUuid = await nameToUuid(application.uniqueIdentifier) ?? "unknown"
 
     // export application data to database
     con.query(`INSERT INTO applicationhistory(dcUserId, messageId, messageTimestamp, messageURL, mcUsername, mcUuid, status) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [application.discordID, message.id, message.createdTimestamp, message.url, application.ign, mcUuid, "unknown"], (err: any) => {
+        [application.discordId, application.messageId, votingMessageTimestamp, votingMessageUrl, application.uniqueIdentifier, mcUuid, "unknown"], (err: any) => {
             if (err) {
                 console.error('Error inserting data:', err)
             } else {
@@ -126,83 +153,27 @@ export async function processNewApplication(message: DiscordJS.Message) {
             }
         })
 
-    await postApplicationHistory(message, applicationChannel, application.discordID, application.ign)
+    await postApplicationHistory(applicationChannel, application.discordId, application.uniqueIdentifier)
 
-    await message.react("🇵")
+    let message = applicationChannel.messages.cache.get(application.messageId)
+    if (message instanceof DiscordJS.Message) await message.react("🇵")
 }
 
-export async function postApplicationHistory(message: Message, messageChannel: TextChannel, discordId: string, mcUsername = '') {
+export async function postApplicationHistory(messageChannel: TextChannel, discordId: string, mcUsername = '') {
     let applicationHistory: MessageEmbed[]
     try {
         applicationHistory = await checkApplicationHistory(discordId,mcUsername)
         if (applicationHistory != null && applicationHistory.length >= 1 && applicationHistory[0].description != null && applicationHistory[0].description.length >= 1) {
             try {
-                messageChannel.send({content: "Application History", embeds: applicationHistory})
+                await messageChannel.send({content: "Application History", embeds: applicationHistory})
             }
             catch (e) {
                 console.error(`failed to post application history: ${applicationHistory[0].description}`)
             }
         }
-        else messageChannel.send({content: "No known prior application history"})
+        else await messageChannel.send({content: "No known prior application history"})
     } catch (error) {
         console.error('Error retrieving application history:', error)
-    }
-}
-
-export async function scanApplication(receivedEmbed: MessageEmbed): Promise<Application> {
-
-    if(receivedEmbed.description == null || !receivedEmbed.description.includes("What is your Minecraft IGN?")){
-        // @ts-ignore
-        console.log(`Invalid application! (jx0039) - ${receivedEmbed.description.slice(0,30)}...`)
-        throw `Invalid application! (jx0039)`
-    }
-
-    const ignBlockText = receivedEmbed.description.match("What is your Minecraft IGN\\?:(.|\\n)*What is your age\\?:")?.toString()
-    const ign = ignBlockText?.slice(29,-22) ?? "Unknown"
-
-    const ageBlockText = receivedEmbed.description.match("What is your age\\?:(.|\\n)*Why do you want to join this server\\?:")?.toString()
-    const age = ageBlockText?.slice(19,-41) ?? "Error"
-
-    const referralText = receivedEmbed.description.match("please specify who\\.:(.|\\n)*Have you read and understood")?.toString()
-    const referral = referralText?.slice(21,-32) ?? "Error"
-
-    const discordNameBlockText = receivedEmbed.footer?.text.match("Applicant:\\s*.+\\s*ID")?.toString()
-    const discordName = discordNameBlockText?.slice(11,-3) ?? "Error"
-
-    const discordID = receivedEmbed.footer?.text.slice(-19).trim() ?? "Error"
-
-    let applicationLengthDescription: string
-    const applicationLength = receivedEmbed.description.length
-    if (applicationLength < 590) applicationLengthDescription = "Impressively bad"
-    else if (applicationLength < 775) applicationLengthDescription = "Yikes"
-    else if (applicationLength < 820) applicationLengthDescription = "Basic"
-    else if (applicationLength < 1013) applicationLengthDescription = "Decent"
-    else if (applicationLength < 1253) applicationLengthDescription = "Good"
-    else if (applicationLength < 1553) applicationLengthDescription = "Very good"
-    else if (applicationLength < 1853) applicationLengthDescription = "Amazing!"
-    else applicationLengthDescription = "WOAH!"
-
-    const rulePhraseDetected: boolean = containsRulePhrase(receivedEmbed.description)
-
-    return new Application(ign, age, referral, discordName, discordID, applicationLengthDescription, rulePhraseDetected)
-}
-
-class Application {
-    public ign: string
-    public age: string
-    public referral: string
-    public discordName: string
-    public discordID: string
-    public applicationLengthDescription: string
-    public rulePhraseDetected: boolean
-    constructor(ign: string, age: string, referral: string, discordName: string, discordID: string, applicationLengthDescription: string, rulePhraseDetected: boolean) {
-        this.ign = ign
-        this.age = age
-        this.referral = referral
-        this.discordName = discordName
-        this.discordID = discordID
-        this.applicationLengthDescription = applicationLengthDescription
-        this.rulePhraseDetected = rulePhraseDetected
     }
 }
 
