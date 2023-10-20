@@ -1,0 +1,86 @@
+server-info:
+  # The name of the server that the program will refer to
+  server-name: 'Divergent SMP'
+
+  # The URL that people go to in order to apply for the server
+  server-application-url: 'https://apply.divergentsmp.net/'
+
+features:
+  # These settings don't actually work, Coming soon
+
+  # React with a thumbs up and thumbs down on announcements
+  announcement-thumbs: true
+  # Where the main server places its main announcements, for automatic thumbs up/down
+  announcement-thumbs-channel-id: '772844397020184579'
+
+  # Birthday messages
+  birthday-message: true
+  # The channel in which to post the birthday message
+  birthday-message-channel-id: '706923005493903367'
+
+
+rule-checking:
+  # This module scans applications by applicants to see if they mention the primary phrase. It is best to have this for something that has a corresponding emoji, like a duck
+
+  # always enabled ============================
+  enabled: true
+
+  # The primary word to describe
+  rule-phrase-text: 'duck'
+
+  # An emoji that describes the primary word
+  rule-phrase-emoji: '🦆'
+
+  # all keyphrases in applications that signify that the rule threshold has been met
+  rule-match-key-phrases:
+    - 'duck'
+    - 'quack'
+    - ':duck:'
+    - '🦆'
+
+emojis:
+  # NEED A GUIDE ON HOW TO DO THIS ===============
+  yes:
+    id: '897152291591819376'
+    emoji: '<:yes:897152291591819376>'
+  no:
+    id: '897152291809935430'
+    emoji: '<:no:897152291809935430>'
+  # The debug emoji is used to assist with debugging, it can be anything!
+  debug:
+    id: '868669449010569247'
+    emoji: '<:redstone:868669449010569247>'
+
+channel-ids:
+  # This is a list of all the channel id's to post things in. Enable developer mode on discord, then right click a text channel to be able to copy the channel id
+
+  # Where to place important alerts
+  alert: '1008083728863596716'
+
+  # Bot information - recommended for developer only
+  bot-info: '1121768749054316574'
+
+  # Bot logs - recommended for developer only
+  bot-log: '970103685810118796'
+
+  # Logs that are useful for staff to see
+  staff-bot-log: '800925944399265812'
+
+  # Any DM's sent to the bot are forwarded to this channel
+  messages-to-robert: '970115159781683290'
+
+  # Notifications regarding applications are sent to this channel
+  application-notification: '829119465718284358'
+
+  # Where to post full applications
+  application-posted: '908855513163399268'
+
+  # Where applications are voted on
+  application-voting: '805296027241676820'
+
+
+debug-mode:
+  # Useful for testing with a non production database
+  enabled: true
+  # Used as a substitute for all channel messages to be placed inside
+  debug-channel-id: '970336504364818452'
