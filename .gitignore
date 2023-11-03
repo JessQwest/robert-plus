@@ -130,4 +130,4 @@ dist
 .pnp.*
 
 .idea/
-robert.properties
+config/local.yml

@@ -1,15 +1,12 @@
 var cron = require('node-cron')
 const config = require("config")
 import * as DiscordJS from 'discord.js'
-const { MessageActionRow, MessageButton } = require('discord.js')
 import * as dotenv from 'dotenv'
 // @ts-ignore
 import { v4 as uuidv4 } from 'uuid'
 import {TextBasedChannel} from "discord.js"
 dotenv.config()
 var mysql = require('mysql')
-const PropertiesReader = require('properties-reader')
-const prop = PropertiesReader('robert.properties')
 
 import * as db_setup from './db_setup'
 import * as scheduled_jobs from './scheduled_jobs'
@@ -24,16 +21,11 @@ import {guildMemberUpdate} from "./action_guildMemberUpdate"
 import {messageCreate} from "./action_messageCreate"
 import {messageDelete} from "./action_messageDelete"
 
-export var DEBUGMODE = false
+export var DEBUGMODE = config.get('debug-mode.enabled')
 
-console.log(`Reading debugmode - ${prop.get("debugmode")}`)
-if (prop.get("debugmode") == true){
+if (DEBUGMODE){
     console.log("Running with debugmode.")
-    DEBUGMODE = true
 }
-
-//CONSTANTS
-console.log("Applying constants")
 
 // text constants
 export const SERVER_NAME = config.get('server-info.server-name')
@@ -61,33 +53,21 @@ export const MESSAGES_TO_ROBERT_CHANNEL_ID = config.get('channel-ids.messages-to
 export const APPLICATION_NOTIFICATION_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : config.get('channel-ids.application-notification')
 export const MAIN_ANNOUNCEMENT_CHANNEL = config.get('features.announcement-thumbs-channel-id')
 export const APPLICATION_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : config.get('channel-ids.application-posted') // channel where applications are posted
-export const APPLICATION_VOTING_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : "805296027241676820" // channel where applications summaries are posted and voted on
-export const BIRTHDAY_MESSAGE_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : "706923005493903367" // for posting birthday messages
-
-var channelIDtoPostApplications: string = ""
-var channelIDtoPostApplicationNotification: string = ""
-if (DEBUGMODE){
-    channelIDtoPostApplications = DEBUG_CHANNEL_ID
-    channelIDtoPostApplicationNotification = DEBUG_CHANNEL_ID
-}
-else{
-    channelIDtoPostApplications = "805296027241676820"
-    channelIDtoPostApplicationNotification = "829119465718284358"
-}
+export const APPLICATION_VOTING_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : config.get('channel-ids.application-voting') // channel where applications summaries are posted and voted on
+export const BIRTHDAY_MESSAGE_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : config.get('features.birthday-message-channel-id') // for posting birthday messages
 
 // server constants
-export const APPLICATION_SERVER_ID = DEBUGMODE ? "772844397020184576" : "743616108288016464"
-export const MAIN_SERVER_ID = "706923004285812849"
+export const APPLICATION_SERVER_ID = DEBUGMODE ? config.get('debug-mode.debug-server-id') : config.get('application.application-server-id')
+export const MAIN_SERVER_ID = config.get('server-info.server-id')
 
 // other constants
-// second number needs to be one greater than the majority of staff (for 5 staff, majority is 3, so this value needs to be 4)
-export const staffReactThreshold = DEBUGMODE ? 2 : 4
-export const APPLICATION_VOTE_REMINDER_THRESHOLD_HOURS = DEBUGMODE ? 0.0001 : 8 // how often, in hours, should the bot remind people to vote on applications
+export const staffReactThreshold = DEBUGMODE ? 2 : config.get('application.application-vote-threshold') + 1
+export const APPLICATION_VOTE_REMINDER_THRESHOLD_HOURS = DEBUGMODE ? 0.0001 : config.get('application.application-reminder-interval') // how often, in hours, should the bot remind people to vote on applications
+export const APPLICATION_MAX_REMIND_TIMES = config.get('application.application-reminder-times') // how many times should the bot remind people to vote on applications. a give up message will be sent after this
 export const APPLICATION_VOTER_ROLE_ID = DEBUGMODE ? "975908077884809276" : "743617410069692437" // people with this role that have not voted will be pinged to vote
-export const APPLICATION_MAX_REMIND_TIMES = 3 // how many times should the bot remind people to vote on applications. a give up message will be sent after this
-export const ROBERT_USER_ID = "969760796278157384"
-export const MUSEUM_ROLE_ID = "1121767435159212112"
-export const BIRTHDAY_ROLE_ID = "801826957041860638"
+export const ROBERT_USER_ID = config.get('other-ids.robert-plus-id')
+export const MUSEUM_ROLE_ID = config.get('other-ids.museum')
+export const BIRTHDAY_ROLE_ID = config.get('features.birthday-role-id')
 
 //CONSTANTS END
 
@@ -100,20 +80,17 @@ export const client = new DiscordJS.Client({
     ]
 })
 
-var dbHost: String = ""
-var dbPort: String = ""
-var dbUser: String = ""
-var dbPassword: String = ""
-var dbDatabase: String = ""
+const dbHost: String = DEBUGMODE ? config.get('debug-mode.debughost') : config.get('database.host')
+const dbPort: String = DEBUGMODE ? config.get('debug-mode.debugport') : config.get('database.port')
+const dbUser: String = DEBUGMODE ? config.get('debug-mode.debuguser') : config.get('database.user')
+const dbPassword: String = DEBUGMODE ? config.get('debug-mode.debugpassword') : config.get('database.password')
+const dbDatabase: String = DEBUGMODE ? config.get('debug-mode.debugdatabase') : config.get('database.database')
 
-var lpHost = prop.get("lphost")
-var lpPort = prop.get("lpport")
-var lpUser = prop.get("lpuser")
-var lpPassword = prop.get("lppassword")
-var lpDatabase = prop.get("lpdatabase")
-
-setupDBParameters()
-console.log("Database Params set")
+const lpHost = config.get('database.lphost')
+const lpPort = config.get('database.lpport')
+const lpUser = config.get('database.lpuser')
+const lpPassword = config.get('database.lppassword')
+const lpDatabase = config.get('database.lpdatabase')
 
 console.log(`Attempting to create SQL connection to db ${dbDatabase} with ${dbHost}:${dbPort} ${dbUser}/${dbPassword}`)
 export const con = mysql.createPool({
@@ -132,23 +109,6 @@ export const lpcon = mysql.createPool({
     password: lpPassword,
     database: lpDatabase
 })
-
-function setupDBParameters(){
-    if (DEBUGMODE){
-        dbHost = prop.get("debughost")
-        dbPort = prop.get("debugport")
-        dbUser = prop.get("debuguser")
-        dbPassword = prop.get("debugpassword")
-        dbDatabase = prop.get("debugdatabase")
-    }
-    else{
-        dbHost = prop.get("host")
-        dbPort = prop.get("port")
-        dbUser = prop.get("user")
-        dbPassword = prop.get("password")
-        dbDatabase = prop.get("database")
-    }
-}
 
 export var debugchannel : TextBasedChannel
 

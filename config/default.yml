@@ -1,9 +1,25 @@
 server-info:
   # The name of the server that the program will refer to
-  server-name: 'Divergent SMP'
+  server-name: ''
 
   # The URL that people go to in order to apply for the server
-  server-application-url: 'https://apply.divergentsmp.net/'
+  server-application-url: ''
+
+  # The ID of the main server
+  server-id: ''
+
+application:
+  # The ID of the application server
+  application-server-id: ''
+
+  # How many staff members need to vote on an application for a judgement to be made
+  application-vote-threshold: 3
+
+  # How often, in hours, should a reminder be sent for an application without judgement
+  application-reminder-interval: 8
+
+  # How many times should an application reminder be sent
+  application-reminder-times: 3
 
 features:
   # These settings don't actually work, Coming soon
@@ -11,13 +27,14 @@ features:
   # React with a thumbs up and thumbs down on announcements
   announcement-thumbs: true
   # Where the main server places its main announcements, for automatic thumbs up/down
-  announcement-thumbs-channel-id: '772844397020184579'
+  announcement-thumbs-channel-id: ''
 
   # Birthday messages
   birthday-message: true
   # The channel in which to post the birthday message
-  birthday-message-channel-id: '706923005493903367'
-
+  birthday-message-channel-id: ''
+  # Discord role used for the birthday ID
+  birthday-role-id: ''
 
 rule-checking:
   # This module scans applications by applicants to see if they mention the primary phrase. It is best to have this for something that has a corresponding emoji, like a duck
@@ -55,32 +72,60 @@ channel-ids:
   # This is a list of all the channel id's to post things in. Enable developer mode on discord, then right click a text channel to be able to copy the channel id
 
   # Where to place important alerts
-  alert: '1008083728863596716'
+  alert: ''
 
   # Bot information - recommended for developer only
-  bot-info: '1121768749054316574'
+  bot-info: ''
 
   # Bot logs - recommended for developer only
-  bot-log: '970103685810118796'
+  bot-log: ''
 
   # Logs that are useful for staff to see
-  staff-bot-log: '800925944399265812'
+  staff-bot-log: ''
 
   # Any DM's sent to the bot are forwarded to this channel
-  messages-to-robert: '970115159781683290'
+  messages-to-robert: ''
 
   # Notifications regarding applications are sent to this channel
-  application-notification: '829119465718284358'
+  application-notification: ''
 
   # Where to post full applications
-  application-posted: '908855513163399268'
+  application-posted: ''
 
   # Where applications are voted on
-  application-voting: '805296027241676820'
+  application-voting: ''
 
+other-ids:
+  # The id of the robert+ user
+  robert-plus-id: ''
+
+  # The id of the Museum role
+  museum: ''
+
+database:
+  # The database for robert to store information
+  host: ''
+  port: ''
+  user: ''
+  password: ''
+  database: ''
+
+  # The database that is being used by luckperms
+  lphost: ''
+  lpport: ''
+  lpuser: ''
+  lppassword: ''
+  lpdatabase: ''
 
 debug-mode:
   # Useful for testing with a non production database
   enabled: true
   # Used as a substitute for all channel messages to be placed inside
-  debug-channel-id: '970336504364818452'
+  debug-channel-id: ''
+  debug-server-id: ''
+
+  debughost: '127.0.0.1'
+  debugport: '3306'
+  debuguser: 'mainuser'
+  debugpassword: 'abcd1234%'
+  debugdatabase: 'whitelistTestDatabase'
