@@ -23,7 +23,7 @@ import {messageDelete} from "./action_messageDelete"
 
 export var DEBUGMODE = config.get('debug-mode.enabled')
 
-if (DEBUGMODE){
+if (DEBUGMODE) {
     console.log("Running with debugmode.")
 }
 

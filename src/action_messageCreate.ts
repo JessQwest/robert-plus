@@ -10,7 +10,7 @@ import {changeApplicationIGN} from "./zTopic_application_management"
 import {dmReceived} from "./zTopic_application_creator"
 
 
-export async function messageCreate(client: Client, message: DiscordJS.Message){
+export async function messageCreate(client: Client, message: DiscordJS.Message) {
     if (client.user == null) {
         console.error(`client.user is null (jx0033)`)
         return
@@ -22,7 +22,7 @@ export async function messageCreate(client: Client, message: DiscordJS.Message){
     }
 
     // if replying to an application with an exclamation mark, attempt to change the ign
-    if (message.reference != null && message.reference.messageId != null && message.content.at(0) == "!"){
+    if (message.reference != null && message.reference.messageId != null && message.content.at(0) == "!") {
         await changeApplicationIGN(message)
     }
 
@@ -65,7 +65,7 @@ async function postRobertMessage(client: DiscordJS.Client, message: DiscordJS.Me
         let messageContent = message.content.replace(`<@${ROBERT_USER_ID}>`,"@Robert")
         messageContent = messageContent.replace("@everyone","@ everyone")
         await messagesToRobert.send(message.author.username + ": " + messageContent + "")
-        for (const attatchment of message.attachments){
+        for (const attatchment of message.attachments) {
             await messagesToRobert.send(message.author.username + " attached " + attatchment[1].name + ": " + attatchment[1].url)
         }
     }

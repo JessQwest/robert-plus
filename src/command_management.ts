@@ -1,14 +1,14 @@
 import * as DiscordJS from "discord.js"
 import {client} from "./index"
 
-export function registerCommands(){
+export function registerCommands() {
 
-    const testGuildID = '772844397020184576'
+    const testGuildID = '706923004285812849'
     const testGuild = client.guilds.cache.get(testGuildID)
 
     let commands
 
-    if (testGuild){
+    if (testGuild) {
         commands = testGuild.commands
     }
     else {
@@ -164,6 +164,22 @@ export function registerCommands(){
     })
 
     commands?.create({
+        name: 'rolebutton',
+        description: "Creates a button to manage a role for a user",
+        options: [{
+            name: "role",
+            description: "The role to give out",
+            required: true,
+            type: DiscordJS.Constants.ApplicationCommandOptionTypes.ROLE
+        },{
+            name: "channel",
+            description: "The channel to paste the button in (optional, defaults to current channel)",
+            required: false,
+            type: DiscordJS.Constants.ApplicationCommandOptionTypes.CHANNEL
+        }]
+    })
+
+    commands?.create({
         name: 'purge',
         description: "(STAFF) Kick a player from the server",
         options: [{
@@ -173,4 +189,5 @@ export function registerCommands(){
             type: DiscordJS.Constants.ApplicationCommandOptionTypes.STRING
         }]
     })
+
 }

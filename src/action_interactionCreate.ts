@@ -1,4 +1,12 @@
-import {ButtonInteraction, Client, GuildMember, Interaction, MessageEmbed} from "discord.js"
+import {
+    ButtonInteraction,
+    Client,
+    GuildMember,
+    Interaction,
+    MessageEmbed,
+    RateLimitError, Role,
+    TextChannel
+} from "discord.js"
 import {escapeFormatting, getDiscordDisplayName, verifyUsernameInput} from "./utility"
 import * as DiscordJS from "discord.js"
 import fetch from "node-fetch"
@@ -23,6 +31,7 @@ import {
     buttonPostApplication, buttonSkipQuestion,
     createApplication, dmReceived
 } from "./zTopic_application_creator"
+import {createRoleButton, manageUserRole} from "./zTopic_role_manager"
 
 export var buttonIDSet : Set<string> = new Set
 export async function interactionCreateButton(client: Client, i: Interaction) {
@@ -59,35 +68,43 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
             await i.reply({ ephemeral: true, content: startApplicationResponse })
             return
         }
-        if (splitCustomId[1] === "previous") {
+        else if (splitCustomId[1] === "previous") {
             await buttonGotoPreviousQuestion(i.user)
             await i.deferUpdate()
             return
         }
-        if (splitCustomId[1] === "next") {
+        else if (splitCustomId[1] === "next") {
             await buttonGotoNextQuestion(i.user)
             await i.deferUpdate()
             return
         }
-        if (splitCustomId[1] === "submit") {
+        else if (splitCustomId[1] === "submit") {
             await buttonPostApplication(i.user)
             await i.deferUpdate()
             return
         }
-        if (splitCustomId[1] === "cancel") {
+        else if (splitCustomId[1] === "cancel") {
             await buttonCancelApplication(i.user)
             await i.deferUpdate()
             return
         }
-        if (splitCustomId[1] === "skip") {
+        else if (splitCustomId[1] === "skip") {
             await buttonSkipQuestion(i.user)
             await i.deferUpdate()
             return
         }
     }
 
+    // will be in format role,<add/remove>,<roleId>. userId is taken from interaction
+    if (splitCustomId[0] === "role") {
+        const response = await manageUserRole(i, splitCustomId[1],splitCustomId[2])
+        console.warn("AAAA" + response)
+        await i.reply({ ephemeral: true, content: response })
+        return
+    }
+
     // check for button clash
-    if (!buttonIDSet.has(b.message.id)){
+    if (!buttonIDSet.has(b.message.id)) {
         buttonIDSet.add(b.message.id)
     }
     else {
@@ -129,7 +146,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
         return value
     }).catch(error => {
         console.log(`Error in getting username: ${error} (jx0017)`)
-        if (i.channel == null){
+        if (i.channel == null) {
             console.log(`Error in reporting getting username error (jx0018)`)
             return
         }
@@ -139,7 +156,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
 
     await userPromise
 
-    if (discordUser == null){
+    if (discordUser == null) {
         console.log("discord user is undefined! (jx0021)")
         return
     }
@@ -177,27 +194,27 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
 
         //WHITELISTING
         // @ts-ignore
-        if(!verifyUsernameInput(mcUsername)){
+        if(!verifyUsernameInput(mcUsername)) {
             whitelistMessage = `${NO_EMOJI} ${escapedMcUsername} is not a recognised username`
         }
         else
         {
             console.log("mc username verified")
-            con.query('SELECT name FROM whitelist WHERE name = ? AND whitelisted = 0', [mcUsername], function (err: any, result: any, fields: any){
+            con.query('SELECT name FROM whitelist WHERE name = ? AND whitelisted = 0', [mcUsername], function (err: any, result: any, fields: any) {
                 console.log("select statement")
-                if (err){
+                if (err) {
                     whitelistMessage = `${NO_EMOJI} SQL Error 1, Jess needs to look into this (jx0005)`
                     console.error(err)
                 }
                 else {
                     console.log("Number of people with this name already in whitelist: " + result.length)
                 }
-                if (result.length > 0){
+                if (result.length > 0) {
                     whitelistMessage = "<:maybe:1024499432781254697> " + escapeFormatting(mcUsername) + " is already in the whitelist"
                 }
                 else{
                     con.query('INSERT INTO whitelist (uuid, name, whitelisted) VALUES (?,?,0)', [uuidv4(), mcUsername] , function (err: any, result: any, fields: any) {
-                        if (err){
+                        if (err) {
                             whitelistMessage = `${NO_EMOJI} SQL Error 2, Jess needs to look into this (jx0022)`
                             console.error(err)
                         }
@@ -261,7 +278,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
                 })
             })
         }
-        catch (err){
+        catch (err) {
             personDmMessage = `${NO_EMOJI} Could not generate server invite, Jess needs to look into this`
             console.log(err)
         }
@@ -273,7 +290,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
         try{
             await sleep(4000)
         }
-        catch (err){
+        catch (err) {
         }
 
         const acceptEmbed = new MessageEmbed()
@@ -328,7 +345,7 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
 
     const { commandName, options, user, member, guild } = interaction
 
-    if (commandName === "alert"){
+    if (commandName === "alert") {
         // @ts-ignore
         client.channels.cache.get(ALERT_CHANNEL).send(`@everyone ${user.username} has raised an alert in ${interaction.channel.toString()}`)
         await interaction.reply({
@@ -337,7 +354,7 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
         })
     }
 
-    if (commandName === "museum"){
+    if (commandName === "museum") {
         if (interaction.guild == null) return
         interaction.guild.roles.fetch(MUSEUM_ROLE_ID).then(role => {
             // @ts-ignore
@@ -352,7 +369,7 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
         return
     }
 
-    if (commandName === "getdiscordname"){
+    if (commandName === "getdiscordname") {
         try {
             await interaction.deferReply({ephemeral: true})
             // @ts-ignore
@@ -416,7 +433,7 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
         }
     }
 
-    if (commandName === "getminecraftname"){
+    if (commandName === "getminecraftname") {
         await interaction.deferReply({ephemeral: true})
         try{
             await con.query(`SELECT minecraftUuid FROM accountLinking WHERE discordId = '` + options.getUser("discordusername") + "'", async function (err: any, result: any, fields: any) {
@@ -436,7 +453,7 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
         }
     }
 
-    if (commandName === "nametouuid"){
+    if (commandName === "nametouuid") {
         const username = options.getString("username")
         await interaction.deferReply({ephemeral: true})
         try{
@@ -453,27 +470,27 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
         }
     }
 
-    if (commandName === "bedtime"){
+    if (commandName === "bedtime") {
         let bedtimeSuccess = false
         let timeoutusername = "You have"
         let guildmember
         // @ts-ignore
         guildmember = await guild?.members.fetch(options.getUser("username"))
         // @ts-ignore
-        if (options.getUser("username") === null || (!interaction.memberPermissions.has("ADMINISTRATOR") && interaction.user.id !== "430518858097360907")){
+        if (options.getUser("username") === null || (!interaction.memberPermissions.has("ADMINISTRATOR") && interaction.user.id !== "430518858097360907")) {
             if (member instanceof GuildMember && interaction.channel != null) {
                 bedtimeSuccess = await bedtimeUser(member)
             }
         }
         // @ts-ignore
-        else if (options.getUser("username").id === "264183823716057089" && user.id === "430518858097360907"){
+        else if (options.getUser("username").id === "264183823716057089" && user.id === "430518858097360907") {
             // @ts-ignore
             bedtimeSuccess = await bedtimeUser(guildmember)
             // @ts-ignore
             timeoutusername = guildmember.user.username + " has"
         }
         // @ts-ignore
-        else if (interaction.memberPermissions.has("ADMINISTRATOR")){
+        else if (interaction.memberPermissions.has("ADMINISTRATOR")) {
             // @ts-ignore
             bedtimeSuccess = await bedtimeUser(guildmember)
             // @ts-ignore
@@ -481,7 +498,7 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
             // @ts-ignore
             console.log("Admin timed out user " + options.getUser("username").username)
         }
-        if (bedtimeSuccess){
+        if (bedtimeSuccess) {
             // @ts-ignore
             await interaction.reply(timeoutusername + " requested to go to bed, see you in 6 hours!")
         }
@@ -493,12 +510,12 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
     }
 
     //commands past this point need special perm
-    if (user.id != "252818596777033729" && interaction.channelId != "805296027241676820"){
+    if (user.id != "252818596777033729" && interaction.channelId != "805296027241676820") {
         await interaction.reply({content: "Only Jessica may control Robert here."})
         return
     }
 
-    if (commandName === "register"){
+    if (commandName === "register") {
         // @ts-ignore
         var dcuserinput: DiscordJS.User = options.getUser("discordusername")
         // @ts-ignore
@@ -510,7 +527,7 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
             const {name, id} = await fetch('https://api.mojang.com/users/profiles/minecraft/' + mcuserinput).then((response: { json: () => any }) => response.json())
             mcuuid = id
             mcname = name
-            if (mcuuid == null){
+            if (mcuuid == null) {
                 await interaction.reply({ephemeral: true, content: "Cannot retrieve Minecraft uuid"})
                 return
             }
@@ -547,16 +564,16 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
         })
     }
 
-    if (commandName === "unlink"){
+    if (commandName === "unlink") {
         const dcUser = options.getUser("discordusername")
         const mcUser = options.getString("minecraftusername")
-        if (dcUser == null && mcUser == null){
+        if (dcUser == null && mcUser == null) {
             await interaction.reply("An input is required!")
         }
 
         const dcId = dcUser == null ? null : dcUser.id
 
-        if (dcId != null){
+        if (dcId != null) {
             console.log(`deleting with discordID = ${dcId}`)
             con.query('DELETE FROM accountLinking WHERE discordId = ?', [dcId], function (err: any, result: any, fields: any) {
                 // @ts-ignore
@@ -564,7 +581,7 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
             })
         }
 
-        if (mcUser != null){
+        if (mcUser != null) {
             const {name, id} = await fetch('https://api.mojang.com/users/profiles/minecraft/' + mcUser).then((response: { json: () => any }) => response.json())
             const mcUuid = id
             console.log(`deleting with mcID = ${mcUuid}`)
@@ -578,7 +595,7 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
         return
     }
 
-    if (commandName === "accept"){
+    if (commandName === "accept") {
         const theGuild = await client.guilds.fetch(MAIN_SERVER_ID)
         // @ts-ignore
         const guildInvite = await theGuild.systemChannel.createInvite({maxAge: 604800, maxUses: 1, unique: true})
@@ -591,19 +608,19 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
         return
     }
 
-    if (commandName === "whitelist"){
+    if (commandName === "whitelist") {
 
         await interaction.deferReply()
 
-        if(options.getSubcommand() === "list"){
+        if(options.getSubcommand() === "list") {
             con.query('SELECT name FROM whitelist GROUP BY name', function (err: any, result: any, fields: any) {
                 if (err) throw err
                 const whitelistedPeople = new Set()
-                for(var sqlItem of result){
+                for(var sqlItem of result) {
                     whitelistedPeople.add(sqlItem['name'])
                 }
                 let outputString = ""
-                for(var person of whitelistedPeople){
+                for(var person of whitelistedPeople) {
                     outputString += person + ", "
                 }
                 outputString = escapeFormatting(outputString.slice(0,-2).toString()) //remove last comma and space
@@ -619,7 +636,7 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
         //check if the username is a valid input before checking the other 3 options
 
         // @ts-ignore
-        if(!verifyUsernameInput(options.getString("username"))){
+        if(!verifyUsernameInput(options.getString("username"))) {
             const whitelistedEmbed = new MessageEmbed()
                 .setColor("#e11f1f")
                 .setTitle(options.getString("username") + " is not a recognised username")
@@ -627,11 +644,11 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
             return
         }
 
-        if(options.getSubcommand() === "verify"){
+        if(options.getSubcommand() === "verify") {
             con.query('SELECT name FROM whitelist WHERE name = ?', [options.getString("username")] , function (err: any, result: any, fields: any) {
                 if (err) throw err
                 console.log(result.length)
-                if(result.length >= 1){
+                if(result.length >= 1) {
                     const whitelistedEmbed = new MessageEmbed()
                         .setColor("#1fe125")
                         .setTitle(result[0]["name"] + " is on the whitelist")
@@ -648,7 +665,7 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
             })
         }
 
-        if(options.getSubcommand() === "add"){
+        if(options.getSubcommand() === "add") {
             var usernameWhitelisted = options.getString("username")
             // @ts-ignore
             usernameWhitelisted = escapeFormatting(usernameWhitelisted)
@@ -663,23 +680,23 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
             return
         }
 
-        if(options.getSubcommand() === "remove"){
+        if(options.getSubcommand() === "remove") {
             const mcUsername: string | null = options.getString("username") as string
-            if (typeof mcUsername == null){
+            if (typeof mcUsername == null) {
                 await interaction.reply("Username is null! (jx0019)")
                 return
             }
             con.query('SELECT name FROM whitelist WHERE name = ?', [mcUsername] , function (err: any, result: any, fields: any) {
                 if (err) throw err
                 let resultCount = result.length
-                if(result.length >= 5){
+                if(result.length >= 5) {
                     const whitelistedEmbed = new MessageEmbed()
                         .setColor("#e11f1f")
                         .setTitle("This cannot be done because Jess has probably done a bad, let her sort this one out (jx0020)")
                     interaction.editReply({embeds: [whitelistedEmbed]})
                     return
                 }
-                else if(result.length <= 0){
+                else if(result.length <= 0) {
                     const whitelistedEmbed = new MessageEmbed()
                         .setColor("#e11f1f")
                         .setTitle(escapeFormatting(mcUsername) + " is not on the whitelist and cannot be removed")
@@ -692,7 +709,7 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
                         const whitelistedEmbed = new MessageEmbed()
                             .setColor("#E11F6E")
                             .setTitle(escapeFormatting(mcUsername) + " has been removed from the whitelist")
-                        if(resultCount > 1){
+                        if(resultCount > 1) {
                             whitelistedEmbed.setDescription("Note: Multiple entries have been removed")
                         }
                         interaction.editReply({embeds: [whitelistedEmbed]})
@@ -704,7 +721,23 @@ export async function interactionCreateCommand(client: Client, interaction: Inte
         return
     }
 
-    if (commandName === "purge"){
+    if (commandName === "rolebutton") {
+        let role = options.getRole("role")
+        let inputChannel = options.getChannel("channel")
+        let channel: TextChannel
+        if (role == null || !(role instanceof Role)) return
+        if (inputChannel != null && inputChannel instanceof TextChannel) {
+            channel = inputChannel
+        }
+        else {
+            channel = interaction.channel as TextChannel
+        }
+        await createRoleButton(role, channel)
+        await interaction.reply({ephemeral: true, content: "Button created!"})
+    }
+
+
+    if (commandName === "purge") {
         try {
             await interaction.deferReply()
             let mcUsername = options.getString("mcusername")

@@ -105,7 +105,7 @@ export async function processNewApplication(application: InProgressApplication) 
 
     await applicationChannel.send("@everyone")
     await applicationChannel.send({embeds: [applicationEmbedToPost]})
-        .then(function (voteMessage: { react: (arg0: string) => void }){
+        .then(function (voteMessage: { react: (arg0: string) => void }) {
             if (voteMessage instanceof Message) {
                 votingIgn = application.uniqueIdentifier
                 applicationMessageId = application.messageId
@@ -133,11 +133,11 @@ export async function processNewApplication(application: InProgressApplication) 
 
     // check if Mojang recognizes the username or if its spelt correctly
     let usernameValid: Boolean = await usernameCheck(application.uniqueIdentifier, applicationChannel)
-    if (!usernameValid && !verifyUsernameInput(application.uniqueIdentifier)){
+    if (!usernameValid && !verifyUsernameInput(application.uniqueIdentifier)) {
         await applicationChannel.send("This IGN doesnt look quite right. Reply to the application message with !(ign) if it is wrong")
     }
 
-    if (!application.rulePhraseDetected){
+    if (!application.rulePhraseDetected) {
         postRuleRejectButtons(application.uniqueIdentifier ,application.discordId, applicationTextChannel, application.messageId)
     }
 

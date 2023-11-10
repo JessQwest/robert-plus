@@ -10,9 +10,9 @@ import {dailyHousekeepTask} from "./scheduled_jobs"
 
 export async function debug_messageCreate(message: DiscordJS.Message) {
     //test function
-    if (message.content.toLowerCase().includes("cheese") && message.channelId == DEBUG_CHANNEL_ID){
+    if (message.content.toLowerCase().includes("cheese") && message.channelId == DEBUG_CHANNEL_ID) {
         const user = await client.users.fetch("252818596777033729")
-        if (typeof user == 'undefined'){
+        if (typeof user == 'undefined') {
             console.log("idk that channel")
             return
         }
@@ -69,11 +69,11 @@ export async function debug_messageCreate(message: DiscordJS.Message) {
         console.log(applicationInsertStatement)
     }
 
-    if (message.content === "dbreset" && message.author.id === "252818596777033729" && message.channelId === DEBUG_CHANNEL_ID){
+    if (message.content === "dbreset" && message.author.id === "252818596777033729" && message.channelId === DEBUG_CHANNEL_ID) {
         con.reset()
     }
 
-    if (message.content === "dailyhousekeep" && message.author.id === "252818596777033729" && message.channelId === DEBUG_CHANNEL_ID){
+    if (message.content === "dailyhousekeep" && message.author.id === "252818596777033729" && message.channelId === DEBUG_CHANNEL_ID) {
         await dailyHousekeepTask()
         return
     }
@@ -94,13 +94,13 @@ export async function debug_messageCreate(message: DiscordJS.Message) {
         }
     }
 
-    if (message.content === "flush" && ((message.author.id === "252818596777033729") || message.channelId === "805296027241676820")){
+    if (message.content === "flush" && ((message.author.id === "252818596777033729") || message.channelId === "805296027241676820")) {
         await message.reply("Before: " + Array.from(buttonIDSet.values()).toString())
         await buttonIDSet.clear()
         await message.reply("After: " + Array.from(buttonIDSet.values()).toString())
     }
 
-    if (message.content === "wl" && message.author.id === "252818596777033729" && message.channelId === DEBUG_CHANNEL_ID){
+    if (message.content === "wl" && message.author.id === "252818596777033729" && message.channelId === DEBUG_CHANNEL_ID) {
         message.channel.send("WL TRIGGER")
         const whitelistedEmbed = new MessageEmbed()
             .setColor("#54fbfb")
@@ -138,14 +138,14 @@ export async function debug_messageCreate(message: DiscordJS.Message) {
     }
 
     // if replying to an application with an question mark, pull the history
-    if (message.content.at(0) == "?" && (message.author.id == "252818596777033729" || message.channelId == "805296027241676820")){
+    if (message.content.at(0) == "?" && (message.author.id == "252818596777033729" || message.channelId == "805296027241676820")) {
         if (message.channel instanceof TextChannel) await postApplicationHistory(message.channel, message.content.slice(1), message.content.slice(1))
     }
 }
 
 export async function scanApplication(receivedEmbed: MessageEmbed): Promise<Application> {
 
-    if(receivedEmbed.description == null || !receivedEmbed.description.includes("What is your Minecraft IGN?")){
+    if(receivedEmbed.description == null || !receivedEmbed.description.includes("What is your Minecraft IGN?")) {
         // @ts-ignore
         console.log(`Invalid application! (jx0039) - ${receivedEmbed.description.slice(0,30)}...`)
         throw `Invalid application! (jx0039)`

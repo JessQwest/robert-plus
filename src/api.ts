@@ -21,7 +21,7 @@ export async function nameToUuid(username: String | null): Promise<string>{
         console.log(`name to uuid invalid return for ${username}`)
         throw new Error(`This isn't working right now, try again later or bug Jessica about it (jx0001)`)
     }
-    else if (errorMessage != null){
+    else if (errorMessage != null) {
         console.log(`name to uuid invalid name ${username}`)
         console.log(`No one appears to have this name`)
         return ""

@@ -1,6 +1,6 @@
 import { con } from "./index"
 
-export function setupDatabaseTables(){
+export function setupDatabaseTables() {
     con.query('CREATE TABLE IF NOT EXISTS `accountLinking` (`discordId` VARCHAR(20) NOT NULL,`minecraftUuid` VARCHAR(36) NOT NULL,PRIMARY KEY (`discordId`,`minecraftUuid`));', function (err: any, result: any, fields: any) {
         if (err) throw err
         console.log("accountLinking table created if not exists")
