@@ -64,7 +64,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
     // check if an application button was pressed
     if (splitCustomId[0] === "application") {
         if (splitCustomId[1] === "start") {
-            const startApplicationResponse = await createApplication(i.user)
+            const startApplicationResponse = await createApplication(i.user, splitCustomId[2])
             await i.reply({ ephemeral: true, content: startApplicationResponse })
             return
         }

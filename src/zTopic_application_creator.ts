@@ -20,20 +20,26 @@ export class InProgressApplication {
     public rulePhraseDetected: boolean = false
     public answers: string[] = []
     public applicationStatus = "active"
-    constructor(discordId: string, discordUsername: string) {
+    public questionSet: string
+    constructor(discordId: string, discordUsername: string, questionSet: string) {
         this.discordId = discordId
         this.discordUsername = discordUsername
         this.startTimestamp = Math.floor(Date.now() / 1000)
         this.currentQuestionNo = 0
+        this.questionSet = questionSet
         this.answers = []
-        for (let i = 0; i < questions.length; i++) {
+        for (let i = 0; i < this.getQuestionSet().length; i++) {
             this.answers.push('')
         }
+    }
+    getQuestionSet() {
+        return getQuestions(this.questionSet)
     }
 }
 
 export const REQ_IGN = "IGN"
-export const REQ_NUMBER = "NUMBER"
+export const REQ_POS_NUMBER = "NUMBER"
+export const REQ_ANY_NUMBER = "ANY_NUMBER"
 export const REQ_TEXT = "TEXT"
 export const REQ_OPTIONAL_TEXT = "OPTIONAL_TEXT"
 
@@ -46,9 +52,9 @@ export const VISIBILITY_ALL_UNIQUE_IDENTIFIER = "ALL_UNIQUE_IDENTIFIER"
 // [Question text, validation type, visibility, short identifier]
 // visibility indicates if the response is shown in the summary to application reviewers, notification viewers, none or both
 // use the all unique identifier to establish their name for voting purposes
-export const questions = [
+export const applicationquestions = [
     ["What is your Minecraft IGN?", REQ_IGN, VISIBILITY_ALL_UNIQUE_IDENTIFIER, "IGN"],
-    ["What is your age?", REQ_NUMBER, VISIBILITY_REVIEW_ONLY, "Age"],
+    ["What is your age?", REQ_POS_NUMBER, VISIBILITY_REVIEW_ONLY, "Age"],
     ["Why do you want to join this server?", REQ_TEXT, VISIBILITY_NONE, "Reason for joining"],
     ["What rule do you value most when playing on an SMP?", REQ_TEXT, VISIBILITY_NONE, "Most valued rule"],
     ["What are some of your hobbies outside of minecraft?", REQ_TEXT, VISIBILITY_NONE, "Hobbies"],
@@ -58,14 +64,28 @@ export const questions = [
     ["Include any additional information or questions here", REQ_OPTIONAL_TEXT, VISIBILITY_NONE, "Additional information"]
 ]
 
+export const shopquestions = [
+    ["What is your Minecraft IGN?", REQ_IGN, VISIBILITY_ALL_UNIQUE_IDENTIFIER, "IGN"],
+    ["What is your shop X coordinate?", REQ_ANY_NUMBER, VISIBILITY_ALL, "X"],
+    ["What is your shop Z coordinate?", REQ_ANY_NUMBER, VISIBILITY_ALL, "Z"],
+    ["What do you wish to sell?", REQ_TEXT, VISIBILITY_ALL, "Shop type"]
+]
+
+// todo specify in config file the output main channel, output notification channel
+
+function getQuestions(questionSet: string) {
+    if (questionSet == "applicationquestions") return applicationquestions
+    if (questionSet == "shopquestions") return shopquestions
+    throw "invalid question set provided"
+}
+
 const inputTypes = [
     [REQ_IGN, "your IGN, which is composed of letters, numbers, and underscores"],
-    [REQ_NUMBER, "a number"],
+    [REQ_POS_NUMBER, "a number"],
+    [REQ_ANY_NUMBER, "a number"],
     [REQ_TEXT, "some text (less than 800 characters)"],
     [REQ_OPTIONAL_TEXT, "some text or click the button to skip"]
 ]
-
-export const UNIQUE_IDENTIFIER_ID = questions.findIndex(item => item[2] === VISIBILITY_ALL_UNIQUE_IDENTIFIER)
 
 function inputTypeLookup(inputType: string): string {
     for (const item of inputTypes) {
@@ -80,13 +100,13 @@ function lookupApplication(discordId: string): InProgressApplication | undefined
 
 let inProgressApplications: InProgressApplication[] = []
 
-export async function createApplication(user: DiscordJS.User): Promise<string> {
+export async function createApplication(user: DiscordJS.User, questionSet: string): Promise<string> {
     const playerApplication = lookupApplication(user.id)
     if (playerApplication != null) {
         return "You already have an application in progress!"
     }
 
-    const newApplication = new InProgressApplication(user.id, user.username)
+    const newApplication = new InProgressApplication(user.id, user.username, questionSet)
     inProgressApplications.push(newApplication)
 
     try {
@@ -123,12 +143,12 @@ export async function dmReceived(messageContent: string, messageAuthor: DiscordJ
     const currentApplication = lookupApplication(messageAuthor.id)
     if (currentApplication == null) return
 
-    if (currentApplication.currentQuestionNo >= questions.length) {
+    if (currentApplication.currentQuestionNo >= currentApplication.getQuestionSet().length) {
         await dmUserApplicationSubmissionConfirmation(messageAuthor)
         return
     }
 
-    const answerValidation = await validateAnswer(messageContent, questions[currentApplication.currentQuestionNo][1])
+    const answerValidation = await validateAnswer(messageContent, currentApplication.getQuestionSet()[currentApplication.currentQuestionNo][1])
     if (answerValidation == -1) {
         console.error(`answer validation exception! (jx0052)`)
         await messageAuthor.send(`An error occurred while validating your answer. Please let a staff member know.`)
@@ -146,7 +166,7 @@ export async function dmReceived(messageContent: string, messageAuthor: DiscordJ
     currentApplication.answers[currentApplication.currentQuestionNo] = messageContent
     currentApplication.currentQuestionNo ++
 
-    if (currentApplication.currentQuestionNo >= questions.length) {
+    if (currentApplication.currentQuestionNo >= currentApplication.getQuestionSet().length) {
         await dmUserApplicationSubmissionConfirmation(messageAuthor)
         return
     }
@@ -191,12 +211,12 @@ async function dmUserQuestion(user: DiscordJS.User, questionNo: number): Promise
     const playerApplication = lookupApplication(user.id)
     if (playerApplication == null) return false
 
-    const inputDescription = inputTypeLookup(questions[questionNo][1])
+    const inputDescription = inputTypeLookup(playerApplication.getQuestionSet()[questionNo][1])
     const currentUserInput = playerApplication.answers[questionNo]
     const embedDescription = currentUserInput === '' ? `Enter ${inputDescription}.` : `Your current answer: ${currentUserInput}\n\nEnter ${inputDescription}.`
 
     let questionEmbed = new MessageEmbed()
-        .setTitle(`Question ${questionNo + 1} of ${questions.length}: ${questions[questionNo][0]}`)
+        .setTitle(`Question ${questionNo + 1} of ${playerApplication.getQuestionSet().length}: ${playerApplication.getQuestionSet()[questionNo][0]}`)
         .setDescription(embedDescription)
         .setColor(`#10c1e0`)
 
@@ -227,7 +247,7 @@ async function dmUserApplicationSubmissionConfirmation(user: DiscordJS.User) {
 function generateButtons(playerApplication: InProgressApplication, questionNo: number): MessageActionRow {
     const messageActionRow = new MessageActionRow()
 
-    if (questionNo < questions.length && questions[questionNo][1] === REQ_OPTIONAL_TEXT) {
+    if (questionNo < playerApplication.getQuestionSet().length && playerApplication.getQuestionSet()[questionNo][1] === REQ_OPTIONAL_TEXT) {
         const skipButton = new MessageButton()
             .setCustomId(`application,skip`)
             .setLabel(`⏭ Skip question`)
@@ -248,7 +268,7 @@ function generateButtons(playerApplication: InProgressApplication, questionNo: n
             .setStyle('SUCCESS')
         messageActionRow.addComponents(submitButton)
     }
-    if (questionNo + 1 < questions.length && playerApplication.answers[questionNo] != '') {
+    if (questionNo + 1 < playerApplication.getQuestionSet().length && playerApplication.answers[questionNo] != '') {
         const nextButton = new MessageButton()
             .setCustomId(`application,next`)
             .setLabel(`Next question ➡️`)
@@ -277,7 +297,7 @@ export async function buttonGotoNextQuestion(user: DiscordJS.User) {
     const playerApplication =  lookupApplication(user.id)
     if (playerApplication == null) return
 
-    if (playerApplication.currentQuestionNo + 1 < questions.length && playerApplication.answers[playerApplication.currentQuestionNo] != '') {
+    if (playerApplication.currentQuestionNo + 1 < playerApplication.getQuestionSet().length && playerApplication.answers[playerApplication.currentQuestionNo] != '') {
         playerApplication.currentQuestionNo ++
         await dmUserQuestion(user, playerApplication.currentQuestionNo)
     }
@@ -299,7 +319,7 @@ export async function buttonSkipQuestion(user: DiscordJS.User) {
     if (playerApplication == null) {
         await user.send(`You don't have an application in progress.`)
     }
-    else if (questions[playerApplication.currentQuestionNo][1] === "OPTIONAL_TEXT") {
+    else if (playerApplication.getQuestionSet()[playerApplication.currentQuestionNo][1] === "OPTIONAL_TEXT") {
         await dmReceived('N/A', user)
     }
 }
@@ -318,8 +338,8 @@ export async function buttonPostApplication(user: DiscordJS.User) {
 
     let application = ""
 
-    for (let i = 0; i < questions.length; i++) {
-        application += `${questions[i][0]}:\n${playerApplication.answers[i]}\n\n`
+    for (let i = 0; i < playerApplication.getQuestionSet().length; i++) {
+        application += `${playerApplication.getQuestionSet()[i][0]}:\n${playerApplication.answers[i]}\n\n`
     }
 
     let finalApplicationEmbed = new MessageEmbed()
@@ -340,7 +360,8 @@ export async function buttonPostApplication(user: DiscordJS.User) {
         playerApplication.messageId = message.id
     })
 
-    playerApplication.uniqueIdentifier = playerApplication.answers[UNIQUE_IDENTIFIER_ID]
+    let uniqueIdentifier = playerApplication.getQuestionSet().findIndex(item => item[2] === VISIBILITY_ALL_UNIQUE_IDENTIFIER)
+    playerApplication.uniqueIdentifier = playerApplication.answers[uniqueIdentifier]
 
     await processNewApplication(playerApplication)
 

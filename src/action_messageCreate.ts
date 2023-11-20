@@ -40,7 +40,7 @@ export async function messageCreate(client: Client, message: DiscordJS.Message) 
         const startApplicationButton = new MessageActionRow()
             .addComponents(
                 new MessageButton()
-                    .setCustomId(`application,start`)
+                    .setCustomId(`application,start,`)
                     .setLabel(`Start an application to ${SERVER_NAME}`)
                     .setStyle('PRIMARY'),
             )

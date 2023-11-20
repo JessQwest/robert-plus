@@ -26,7 +26,6 @@ import {
 import {nameToUuid, usernameCheck} from "./api"
 import {
     InProgressApplication,
-    questions,
     VISIBILITY_ALL, VISIBILITY_ALL_UNIQUE_IDENTIFIER,
     VISIBILITY_NOTIFICATION_ONLY,
     VISIBILITY_REVIEW_ONLY
@@ -61,7 +60,7 @@ export async function processNewApplication(application: InProgressApplication) 
     let totalApplicationLength = 0
 
     for (let i = 0; i < application.answers.length; i++) {
-        let currentQuestion = questions[i]
+        let currentQuestion = application.getQuestionSet()[i]
         let applicantAnswer = application.answers[i]
         totalApplicationLength += applicantAnswer.length
         let questionShortText = currentQuestion[3]
