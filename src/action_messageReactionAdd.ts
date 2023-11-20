@@ -10,7 +10,13 @@ import {
     YES_EMOJI_ID
 } from "./index"
 import {unescapeFormatting} from "./utility"
-import {postRegularRejectButtons, postRuleRejectButtons} from "./zTopic_application_management"
+import {
+    ActiveApplication,
+    lookupApplicationByMessageSummaryId,
+    postRegularRejectButtons,
+    postRuleRejectButtons
+} from "./zTopic_application_management"
+import {InProgressApplication} from "./zTopic_application_creator";
 
 export async function messageReactionAdd(client: Client, reaction: MessageReaction | PartialMessageReaction) {
     console.log(`messageReactionAdd triggered`)
@@ -19,33 +25,13 @@ export async function messageReactionAdd(client: Client, reaction: MessageReacti
         await reaction.message.reply(reaction.emoji.name.toString() + reaction.emoji.id.toString())
     }
 
-    if (reaction.message.embeds.length == 0) {
-        console.log(`reaction on non embed: ${reaction.emoji.toString()} (jx0009)`)
-        return
-    }
-    if (reaction.message.embeds[0].description == null || reaction.message.embeds[0].footer == null) {
-        console.log(`reaction on embed missing description or footer: ${reaction.emoji.toString()} (jx0010)`)
-        return
-    }
-    if (reaction.message.author == null) {
-        console.log("reaction message author is null (jx0004)")
-        return
-    }
-    if (reaction.message.embeds[0].title == null || reaction.message.embeds[0].title.toString() != "New Application - Please vote" || reaction.message.author.id != "969760796278157384") {
+    const userApplication = lookupApplicationByMessageSummaryId(reaction.message.id)
+    if (!(userApplication instanceof ActiveApplication)) {
         console.log("reaction is not for a valid application")
         return
     }
     console.log(`reaction on application: ${reaction.emoji.id}`)
 
-    const embedBlockText = reaction.message.embeds[0].description
-    const usernameBlock = embedBlockText.match("IGN:\\s*.+\\s*Discord")
-
-    if (usernameBlock == null) {
-        console.log("username block text is null (jx0006)")
-        return
-    }
-
-    const usernameBlockText = usernameBlock.toString()
     const reactionCache = reaction.message.reactions.cache
 
     if (reactionCache == null) {
@@ -53,7 +39,8 @@ export async function messageReactionAdd(client: Client, reaction: MessageReacti
         return
     }
 
-    const mcusername = usernameBlockText.slice(5, -8)
+    const mcusername = userApplication.name
+    // @ts-ignore
     const footerString: string = reaction.message.embeds[0].footer.text
     const footerParts = footerString.split(',')
 

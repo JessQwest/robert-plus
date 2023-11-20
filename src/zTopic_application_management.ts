@@ -176,7 +176,7 @@ export async function postApplicationHistory(messageChannel: TextChannel, discor
     }
 }
 
-class ActiveApplication {
+export class ActiveApplication {
     public name: string
     public applicationMessageId: string
     public applicationSummaryId: string
@@ -191,6 +191,10 @@ class ActiveApplication {
         this.url = url
         this.timestamp = timestamp
     }
+}
+
+export function lookupApplicationByMessageSummaryId(messageId: string): ActiveApplication | undefined {
+    return activeApplications.find(item => item.applicationSummaryId === messageId)
 }
 
 export async function removeActiveApplication(applicationMessageId: string) {
