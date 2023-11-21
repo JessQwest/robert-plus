@@ -25,7 +25,7 @@ import {
 } from "./index"
 import {nameToUuid, usernameCheck} from "./api"
 import {
-    InProgressApplication,
+    getQuestions,
     VISIBILITY_ALL, VISIBILITY_ALL_UNIQUE_IDENTIFIER,
     VISIBILITY_NOTIFICATION_ONLY,
     VISIBILITY_REVIEW_ONLY
@@ -40,7 +40,46 @@ export const applicationStatusDictionary: Record<string, string> = {
     'genericreject': 'Rejected (no specific reason given)',
 }
 
-export var activeApplications: ActiveApplication[] = []
+export var activeApplications: InProgressApplication[] = []
+
+export class InProgressApplication {
+    public discordId: string // ID of application creator
+    public discordUsername: string // discord username of application creator
+    public uniqueIdentifier: string = "" // TODO remove this
+    public applicationMessageId : string = "" // id of message that contains the full application
+    public applicationMessageUrl: string = "" // url link to the message with the full application
+    public applicationSummaryId: string = "" // id of message with the application summary
+    public applicationSummaryUrl: string = "" // url link to the application summary
+    public startTimestamp: number // the time that the application was created
+    public currentQuestionNo: number = 0 // which question number the applicant is currently working on
+    public rulePhraseDetected: boolean = false // TODO remove this
+    public questionSet: string // what set of questions this application pertains to
+    public answers: string[] = [] // the answers to the questions in the application
+
+    // APPLICATION STATUSES
+    // creating - The applicant is currently creating the application
+    // active - The application has been made and is currently being voted on
+    // cancelled - The application has been cancelled by the user
+    // failed/exception - There has been an issue in the code that has lead to this
+    public applicationStatus = "creating" // current status of the application. Starts out active
+
+    public lastNotificationDatetime: Date = new Date() // the last time staff has been reminded to serve this application
+    public remindedCount: number = 0 // how many times staff has been reminded to serve this application
+    constructor(discordId: string, discordUsername: string, questionSet: string) {
+        this.discordId = discordId
+        this.discordUsername = discordUsername
+        this.startTimestamp = Math.floor(Date.now() / 1000)
+        this.currentQuestionNo = 0
+        this.questionSet = questionSet
+        this.answers = []
+        for (let i = 0; i < this.getQuestionSet().length; i++) {
+            this.answers.push('')
+        }
+    }
+    getQuestionSet() {
+        return getQuestions(this.questionSet)
+    }
+}
 
 export async function processNewApplication(application: InProgressApplication) {
     const applicationChannel = client.channels.cache.get(APPLICATION_VOTING_CHANNEL_ID) //channel to vote in
@@ -94,30 +133,15 @@ export async function processNewApplication(application: InProgressApplication) 
         .setColor("#bdbc4b")
         .setTitle("New Application - Please vote")
         .setDescription(applicationReviewDescription)
-        .setFooter({text: `${application.discordId},${application.messageId}`})
+        .setFooter({text: `${application.discordId},${application.applicationMessageId}`})
 
-    let votingIgn: string = ""
-    let applicationMessageId: string = ""
-    let applicationSummaryId: string = ""
-    let votingMessageUrl: string = ""
-    let votingMessageTimestamp: number = 0
 
     await applicationChannel.send("@everyone")
     await applicationChannel.send({embeds: [applicationEmbedToPost]})
         .then(function (voteMessage: { react: (arg0: string) => void }) {
             if (voteMessage instanceof Message) {
-                votingIgn = application.uniqueIdentifier
-                applicationMessageId = application.messageId
-                applicationSummaryId = voteMessage.id
-                votingMessageUrl = voteMessage.url
-                votingMessageTimestamp = voteMessage.createdTimestamp
-                activeApplications.push(new ActiveApplication(
-                    votingIgn,
-                    applicationMessageId,
-                    applicationSummaryId,
-                    votingMessageUrl,
-                    votingMessageTimestamp
-                ))
+                application.applicationSummaryId = voteMessage.id
+                application.applicationSummaryUrl = voteMessage.url
             }
             voteMessage.react(YES_EMOJI)
             voteMessage.react(NO_EMOJI)
@@ -137,14 +161,14 @@ export async function processNewApplication(application: InProgressApplication) 
     }
 
     if (!application.rulePhraseDetected) {
-        postRuleRejectButtons(application.uniqueIdentifier ,application.discordId, applicationTextChannel, application.messageId)
+        postRuleRejectButtons(application.uniqueIdentifier ,application.discordId, applicationTextChannel, application.applicationMessageId)
     }
 
     let mcUuid = await nameToUuid(application.uniqueIdentifier) ?? "unknown"
 
     // export application data to database
     con.query(`INSERT INTO applicationhistory(dcUserId, messageId, messageTimestamp, messageURL, mcUsername, mcUuid, status) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [application.discordId, application.messageId, votingMessageTimestamp, votingMessageUrl, application.uniqueIdentifier, mcUuid, "unknown"], (err: any) => {
+        [application.discordId, application.applicationMessageId, application.startTimestamp, application.applicationMessageUrl, application.uniqueIdentifier, mcUuid, "unknown"], (err: any) => {
             if (err) {
                 console.error('Error inserting data:', err)
             } else {
@@ -154,7 +178,7 @@ export async function processNewApplication(application: InProgressApplication) 
 
     await postApplicationHistory(applicationChannel, application.discordId, application.uniqueIdentifier)
 
-    let message = applicationChannel.messages.cache.get(application.messageId)
+    let message = applicationChannel.messages.cache.get(application.applicationMessageId)
     if (message instanceof DiscordJS.Message) await message.react("🇵")
 }
 
@@ -176,24 +200,7 @@ export async function postApplicationHistory(messageChannel: TextChannel, discor
     }
 }
 
-export class ActiveApplication {
-    public name: string
-    public applicationMessageId: string
-    public applicationSummaryId: string
-    public url: string
-    public timestamp: number
-    public lastNotificationDatetime: Date = new Date()
-    public remindedCount: number = 0
-    constructor(name: string, applicationMessageId: string, applicationSummaryId: string, url: string, timestamp: number) {
-        this.name = name
-        this.applicationMessageId = applicationMessageId
-        this.applicationSummaryId = applicationSummaryId
-        this.url = url
-        this.timestamp = timestamp
-    }
-}
-
-export function lookupApplicationByMessageSummaryId(messageId: string): ActiveApplication | undefined {
+export function lookupApplicationByMessageSummaryId(messageId: string): InProgressApplication | undefined {
     return activeApplications.find(item => item.applicationSummaryId === messageId)
 }
 

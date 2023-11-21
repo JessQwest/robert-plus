@@ -4,9 +4,12 @@ import {buttonIDSet} from "./action_interactionCreate"
 import {MessageEmbed, TextChannel} from "discord.js"
 import * as DiscordJS from "discord.js"
 import {
+    activeApplications,
+    InProgressApplication,
     postApplicationHistory,
 } from "./zTopic_application_management"
 import {dailyHousekeepTask} from "./scheduled_jobs"
+import {buttonPostApplication} from "./zTopic_application_creator";
 
 export async function debug_messageCreate(message: DiscordJS.Message) {
     //test function
@@ -102,39 +105,21 @@ export async function debug_messageCreate(message: DiscordJS.Message) {
 
     if (message.content === "wl" && message.author.id === "252818596777033729" && message.channelId === DEBUG_CHANNEL_ID) {
         message.channel.send("WL TRIGGER")
-        const whitelistedEmbed = new MessageEmbed()
-            .setColor("#54fbfb")
-            .setTitle(`New: ${SERVER_NAME} Application`)
-            .setDescription("What is your Minecraft IGN?:\n" +
-                "_notch_\n" +
-                "\n" +
-                "What is your age?:\n" +
-                "17\n" +
-                "\n" +
-                "Why do you want to join this server?:\n" +
-                "my friends are in it :D\n" +
-                "\n" +
-                "What rule do you value most when playing on an SMP?:\n" +
-                "having fun :>\n" +
-                "\n" +
-                "What are some of your hobbies outside of minecraft?:\n" +
-                "video gaming B)\n" +
-                "\n" +
-                "Are you a streamer or a youtuber? If so include a link:\n" +
-                "n/a\n" +
-                "\n" +
-                "How did you find the server? (Reddit/friend/website etc) If it's a friend, please specify who.:\n" +
-                "friends\n" +
-                "asd\n" +
-                "\n" +
-                "Have you read and understood the rules?:\n" +
-                "yee\n" +
-                "\n" +
-                "Include any additional information or questions here:\n" +
-                "( ’-’)")
-            .setFooter({text: "Applicant: _Jessica_#0\n" +
-                "ID: 252818596777033729"})
-        message.channel.send({embeds: [whitelistedEmbed]})
+        const application = new InProgressApplication(`252818596777033729`, `jess.qwest`,`applicationquestions`)
+        application.uniqueIdentifier = "JessQwest"
+        application.answers = [
+            "JessQwest",
+            "10",
+            "my friends are in it :D",
+            "having fun :>",
+            "video gaming B)",
+            "n/a",
+            "friends",
+            "yee",
+            "( ’-’)"
+        ]
+        activeApplications.push(application)
+        await buttonPostApplication(message.author)
     }
 
     // if replying to an application with an question mark, pull the history

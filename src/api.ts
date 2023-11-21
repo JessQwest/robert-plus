@@ -28,31 +28,34 @@ export async function nameToUuid(username: String | null): Promise<string>{
     }
     else if (id != null) return id
 
-    throw new Error(`An unhandled error has occurred, bug Jessica (jx0002)`)
+    throw new Error(`An unhandled error has occurred, let staff know (jx0002)`)
 }
 
 export async function usernameCheck(username: string, textChannel: DiscordJS.TextChannel | undefined = undefined): Promise<Boolean> {
     return new Promise(async (resolve, reject) => {
         const url = `https://api.mojang.com/users/profiles/minecraft/${username}`
+        const maxTries: number = 1
 
-        try {
-            const response = await fetch(url)
-            const data = await response.json()
+        for (let i = 0; i < maxTries; i++) {
+            try {
+                const response = await fetch(url)
+                const data = await response.json()
 
-            if (data.errorMessage) {
-                const errorEmbed = new MessageEmbed()
-                    .setColor("#f5bc06")
-                    .setTitle("Minecraft Username Check Failed")
-                    .setDescription(`⚠️ ${data.errorMessage} ⚠️`)
-                if (textChannel != undefined) textChannel.send({embeds: [errorEmbed]})
-                resolve(false)
-            } else {
-                resolve(true)
+                if (data.errorMessage) {
+                    const errorEmbed = new MessageEmbed()
+                        .setColor("#f5bc06")
+                        .setTitle("Minecraft Username Check Failed")
+                        .setDescription(`⚠️ ${data.errorMessage} ⚠️`)
+                    if (textChannel != undefined) await textChannel.send({embeds: [errorEmbed]})
+                    resolve(false)
+                } else {
+                    resolve(true)
+                }
+            } catch (error) {
+                console.error('Error:', error)
             }
-        } catch (error) {
-            console.error('Error:', error)
-            reject(error)
         }
+        reject()
     })
 }
 

@@ -82,12 +82,13 @@ async function postApplicationVotingReminder() {
             }
 
             // depending on how many times the reminder has been sent before, alter the message (or don't send it at all)
+            let voteReminderString = ""
             if (application.remindedCount > APPLICATION_MAX_REMIND_TIMES) continue
             else if (application.remindedCount == APPLICATION_MAX_REMIND_TIMES) {
-                await applicationVotingChannel.send(`FINAL REMINDER: Voting for ${escapeFormatting(application.name)} is still open! [Application Link](${application.url})${unvotedMembersString}`)
-            } else {
-                await applicationVotingChannel.send(`Voting for ${escapeFormatting(application.name)} is still open! [Application Link](${application.url})${unvotedMembersString}`)
+                voteReminderString = `FINAL REMINDER: `
             }
+            voteReminderString += `Voting for ${escapeFormatting(application.uniqueIdentifier)} is still open! [Application Link](${application.applicationMessageUrl}) | [Voting Link](${application.applicationSummaryUrl})${unvotedMembersString}`
+            await applicationVotingChannel.send(voteReminderString)
 
             application.lastNotificationDatetime = new Date()
             application.remindedCount++
@@ -96,7 +97,7 @@ async function postApplicationVotingReminder() {
 }
 
 
-const millsecondsInDay = 1000 * 60 * 60 * 27
+const millisecondsInDay = 1000 * 60 * 60 * 27
 
 async function removeApplicationMembers() {
     const applicationGuild = client.guilds.cache.get(APPLICATION_SERVER_ID)
@@ -110,7 +111,7 @@ async function removeApplicationMembers() {
             if (member.joinedTimestamp == null) {
                 await sendApplicationNotification(`${member.user.username} doesn't have a joined timestamp! @Jessica`)
             } else {
-                let daysJoined = (Date.now() - member.joinedTimestamp) / millsecondsInDay
+                let daysJoined = (Date.now() - member.joinedTimestamp) / millisecondsInDay
                 daysJoined = Math.round(daysJoined)
                 console.log(`${member.user.username} joined at ${member.joinedTimestamp} - ${daysJoined} days ago`)
                 // if the user has no roles (not staff) and has been in the server for 30 days (applicants) or 3 days (in the main server) kick them

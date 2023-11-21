@@ -8,34 +8,8 @@ import {
     SERVER_NAME
 } from "./index"
 import {usernameCheck} from "./api"
-import {processNewApplication} from "./zTopic_application_management";
+import {activeApplications, InProgressApplication, processNewApplication} from "./zTopic_application_management";
 
-export class InProgressApplication {
-    public discordId: string
-    public discordUsername: string
-    public uniqueIdentifier: string = "" // their IGN
-    public messageId : string = ""
-    public startTimestamp: number
-    public currentQuestionNo: number = 0
-    public rulePhraseDetected: boolean = false
-    public answers: string[] = []
-    public applicationStatus = "active"
-    public questionSet: string
-    constructor(discordId: string, discordUsername: string, questionSet: string) {
-        this.discordId = discordId
-        this.discordUsername = discordUsername
-        this.startTimestamp = Math.floor(Date.now() / 1000)
-        this.currentQuestionNo = 0
-        this.questionSet = questionSet
-        this.answers = []
-        for (let i = 0; i < this.getQuestionSet().length; i++) {
-            this.answers.push('')
-        }
-    }
-    getQuestionSet() {
-        return getQuestions(this.questionSet)
-    }
-}
 
 export const REQ_IGN = "IGN"
 export const REQ_POS_NUMBER = "NUMBER"
@@ -73,7 +47,7 @@ export const shopquestions = [
 
 // todo specify in config file the output main channel, output notification channel
 
-function getQuestions(questionSet: string) {
+export function getQuestions(questionSet: string) {
     if (questionSet == "applicationquestions") return applicationquestions
     if (questionSet == "shopquestions") return shopquestions
     throw "invalid question set provided"
@@ -94,20 +68,26 @@ function inputTypeLookup(inputType: string): string {
     return "unknown"
 }
 
-function lookupApplication(discordId: string): InProgressApplication | undefined {
-    return inProgressApplications.find(item => item.discordId === discordId && item.applicationStatus == "active")
+// looks up an application by the user that is currently being created
+function lookupApplication(discordId: string, applicationStatus: string = "creating"): InProgressApplication | undefined {
+    return activeApplications.find(item => item.discordId === discordId && item.applicationStatus == "creating")
 }
 
-let inProgressApplications: InProgressApplication[] = []
-
 export async function createApplication(user: DiscordJS.User, questionSet: string): Promise<string> {
-    const playerApplication = lookupApplication(user.id)
+    // check if there is already an application in progress
+    let playerApplication = lookupApplication(user.id)
     if (playerApplication != null) {
         return "You already have an application in progress!"
     }
 
+    // check if there is an active application being voted on
+    playerApplication = lookupApplication(user.id, "active")
+    if (playerApplication != null) {
+        return "You have recently made an application, and the staff are still reviewing it."
+    }
+
     const newApplication = new InProgressApplication(user.id, user.username, questionSet)
-    inProgressApplications.push(newApplication)
+    activeApplications.push(newApplication)
 
     try {
         const dmSuccess = await dmUserQuestion(user, 0)
@@ -180,9 +160,9 @@ export async function dmReceived(messageContent: string, messageAuthor: DiscordJ
 // returns 2 for failed ign check
 async function validateAnswer(text: string, rule: String): Promise<number> {
     if (rule === "IGN") {
-        text = unescapeFormatting(text)
-        const a = await usernameCheck(text)
-        const b = verifyUsernameInput(text)
+        text = unescapeFormatting(text) // removes any backslashes that may have been entered by the applicant
+        const a = await usernameCheck(text) // test that supplied test exists on the Mojang database
+        const b = verifyUsernameInput(text) // test that the supplied text matches the standard for usernames
         if (!a) {
             return 2
         }
@@ -357,7 +337,8 @@ export async function buttonPostApplication(user: DiscordJS.User) {
     }
 
     await appChannel.send({embeds: [finalApplicationEmbed]}).then(message => {
-        playerApplication.messageId = message.id
+        playerApplication.applicationMessageId = message.id
+        playerApplication.applicationMessageUrl = message.url
     })
 
     let uniqueIdentifier = playerApplication.getQuestionSet().findIndex(item => item[2] === VISIBILITY_ALL_UNIQUE_IDENTIFIER)
@@ -365,7 +346,7 @@ export async function buttonPostApplication(user: DiscordJS.User) {
 
     await processNewApplication(playerApplication)
 
-    playerApplication.applicationStatus = "submitted"
+    playerApplication.applicationStatus = "active"
     await user.send(`Your application has been submitted.`)
 
     console.info("APPLICATION SUBMITTED")

@@ -11,12 +11,11 @@ import {
 } from "./index"
 import {unescapeFormatting} from "./utility"
 import {
-    ActiveApplication,
+    InProgressApplication,
     lookupApplicationByMessageSummaryId,
     postRegularRejectButtons,
     postRuleRejectButtons
 } from "./zTopic_application_management"
-import {InProgressApplication} from "./zTopic_application_creator";
 
 export async function messageReactionAdd(client: Client, reaction: MessageReaction | PartialMessageReaction) {
     console.log(`messageReactionAdd triggered`)
@@ -26,7 +25,7 @@ export async function messageReactionAdd(client: Client, reaction: MessageReacti
     }
 
     const userApplication = lookupApplicationByMessageSummaryId(reaction.message.id)
-    if (!(userApplication instanceof ActiveApplication)) {
+    if (!(userApplication instanceof InProgressApplication)) {
         console.log("reaction is not for a valid application")
         return
     }
@@ -39,13 +38,10 @@ export async function messageReactionAdd(client: Client, reaction: MessageReacti
         return
     }
 
-    const mcusername = userApplication.name
-    // @ts-ignore
-    const footerString: string = reaction.message.embeds[0].footer.text
-    const footerParts = footerString.split(',')
+    const mcUsername = userApplication.uniqueIdentifier
 
-    const discordID: string = footerParts[0] ?? "0"
-    const applicationMessageID: string = footerParts[1] ?? "0"
+    const discordID: string = userApplication.discordId
+    const applicationMessageID: string = userApplication.applicationMessageId
 
     const redstoneReactionCache = reactionCache.get(REDSTONE_EMOJI_ID) as DiscordJS.MessageReaction
     if (redstoneReactionCache != undefined && redstoneReactionCache.count != null && redstoneReactionCache.count == 1) {
@@ -69,13 +65,13 @@ export async function messageReactionAdd(client: Client, reaction: MessageReacti
             const acceptButton = new MessageActionRow()
                 .addComponents(
                     new MessageButton()
-                        .setCustomId(`${unescapeFormatting(mcusername)},${discordID},accept,${applicationMessageID}`)
-                        .setLabel(`Accept ${unescapeFormatting(mcusername)}`)
+                        .setCustomId(`${unescapeFormatting(mcUsername)},${discordID},accept,${applicationMessageID}`)
+                        .setLabel(`Accept ${unescapeFormatting(mcUsername)}`)
                         .setStyle('PRIMARY'),
                 )
             await reaction.message.react(REDSTONE_EMOJI)
             await reaction.message.channel.send({
-                content: `${mcusername} has received enough votes to be accepted. Click the button to accept`,
+                content: `${mcUsername} has received enough votes to be accepted. Click the button to accept`,
                 components: [acceptButton]
             })
         }
@@ -93,12 +89,12 @@ export async function messageReactionAdd(client: Client, reaction: MessageReacti
         if (noVotes.count >= staffReactThreshold) {
             console.log(`${noVotes.count} exceeds threshold of ${staffReactThreshold}, posting new decline button`)
 
-            postRegularRejectButtons(unescapeFormatting(mcusername), discordID, reaction.message.channel, applicationMessageID)
+            postRegularRejectButtons(unescapeFormatting(mcUsername), discordID, reaction.message.channel, applicationMessageID)
             await reaction.message.react(REDSTONE_EMOJI)
         }
     } else if (reaction.emoji.toString() == RULE_PHRASE_EMOJI) {
         console.log(`${RULE_PHRASE_TEXT} has been reacted to a server application`)
         await reaction.message.react(REDSTONE_EMOJI)
-        postRuleRejectButtons(unescapeFormatting(mcusername), discordID, reaction.message.channel, reaction.message.id)
+        postRuleRejectButtons(unescapeFormatting(mcUsername), discordID, reaction.message.channel, reaction.message.id)
     }
 }
