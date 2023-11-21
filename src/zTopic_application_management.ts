@@ -68,7 +68,7 @@ export class InProgressApplication {
     constructor(discordId: string, discordUsername: string, questionSet: string) {
         this.discordId = discordId
         this.discordUsername = discordUsername
-        this.startTimestamp = Math.floor(Date.now() / 1000)
+        this.startTimestamp = Date.now()
         this.currentQuestionNo = 0
         this.questionSet = questionSet
         this.answers = []

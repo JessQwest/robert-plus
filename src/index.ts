@@ -62,7 +62,7 @@ export const MAIN_SERVER_ID = config.get('server-info.server-id')
 
 // other constants
 export const staffReactThreshold = DEBUGMODE ? 2 : config.get('application.application-vote-threshold') + 1
-export const APPLICATION_VOTE_REMINDER_THRESHOLD_HOURS = DEBUGMODE ? 0.0001 : config.get('application.application-reminder-interval') // how often, in hours, should the bot remind people to vote on applications
+export const APPLICATION_VOTE_REMINDER_THRESHOLD_HOURS = DEBUGMODE ? 0.05 : config.get('application.application-reminder-interval') // how often, in hours, should the bot remind people to vote on applications
 export const APPLICATION_MAX_REMIND_TIMES = config.get('application.application-reminder-times') // how many times should the bot remind people to vote on applications. a give up message will be sent after this
 export const APPLICATION_VOTER_ROLE_ID = DEBUGMODE ? "975908077884809276" : "743617410069692437" // people with this role that have not voted will be pinged to vote
 export const ROBERT_USER_ID = config.get('other-ids.robert-plus-id')

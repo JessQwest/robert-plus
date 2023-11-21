@@ -264,7 +264,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
             }).then(invite => {
                 // @ts-ignore
                 discordUser.send({
-                    content: `Hi, I'm Robert, the robotic assistant for ${SERVER_NAME}. Thank you for your interest and application for ${SERVER_NAME}. Your application has been approved and you have been whitelisted on the server.\n` +// @ts-ignore
+                    content: `Thank you for your interest and application for ${SERVER_NAME}. Your application has been approved and you have been whitelisted on the server.\n` +// @ts-ignore
                         `Please join the main server discord with this invite link: https://discord.gg/${invite.code}\n` +
                         `Other details about the server such as the IP address can be found in the #information channel. You don't need to be in the application server anymore.\n` +
                         `Welcome to ${SERVER_NAME}!`
