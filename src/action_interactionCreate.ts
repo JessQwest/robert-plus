@@ -25,6 +25,7 @@ import { v4 as uuidv4 } from 'uuid'
 import {nameToUuid} from "./api"
 import {applicationStatusDictionary, removeActiveApplication} from "./zTopic_application_management"
 import {
+    buttonAgreeQuestion,
     buttonCancelApplication,
     buttonGotoNextQuestion,
     buttonGotoPreviousQuestion,
@@ -93,12 +94,16 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
             await i.deferUpdate()
             return
         }
+        else if (splitCustomId[1] === "agree") {
+            await buttonAgreeQuestion(i.user)
+            await i.deferUpdate()
+            return
+        }
     }
 
     // will be in format role,<add/remove>,<roleId>. userId is taken from interaction
     if (splitCustomId[0] === "role") {
         const response = await manageUserRole(i, splitCustomId[1],splitCustomId[2])
-        console.warn("AAAA" + response)
         await i.reply({ ephemeral: true, content: response })
         return
     }
@@ -240,7 +245,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
                 }
                 else{
                     console.log("success")
-                    accountLinkMessage = `${YES_EMOJI} MC account ${escapedMcUsername} Linked to Discord user ${escapeFormatting(discordUsername)}`
+                    accountLinkMessage = `${YES_EMOJI} MC account ${escapedMcUsername} linked to Discord user ${escapeFormatting(discordUsername)}`
                     console.log(accountLinkMessage)
                 }
             })

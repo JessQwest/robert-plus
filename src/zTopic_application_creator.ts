@@ -16,6 +16,7 @@ export const REQ_POS_NUMBER = "NUMBER"
 export const REQ_ANY_NUMBER = "ANY_NUMBER"
 export const REQ_TEXT = "TEXT"
 export const REQ_OPTIONAL_TEXT = "OPTIONAL_TEXT"
+export const REQ_AGREE = "AGREE"
 
 export const VISIBILITY_NONE = "NONE"
 export const VISIBILITY_REVIEW_ONLY = "REVIEW_ONLY"
@@ -39,17 +40,23 @@ export const applicationquestions = [
 ]
 
 export const shopquestions = [
-    ["What is your Minecraft IGN?", REQ_IGN, VISIBILITY_ALL_UNIQUE_IDENTIFIER, "IGN"],
     ["What is your shop X coordinate?", REQ_ANY_NUMBER, VISIBILITY_ALL, "X"],
     ["What is your shop Z coordinate?", REQ_ANY_NUMBER, VISIBILITY_ALL, "Z"],
-    ["What do you wish to sell?", REQ_TEXT, VISIBILITY_ALL, "Shop type"]
+    ["What do you wish to sell?", REQ_TEXT, VISIBILITY_ALL, "Shop type"],
+    ["I have read and I agree to the shop rules. I understand that if my shop is unstocked for a week I will get a 7 day notice to stock it via Discord, after which, without exceptional circumstances, the shop will be destroyed without notice.", REQ_AGREE, VISIBILITY_NONE, "Agree"]
+]
+
+export const mapquestions = [
+    ["What is your base X coordinate?", REQ_ANY_NUMBER, VISIBILITY_ALL, "X"],
+    ["What is your base Z coordinate?", REQ_ANY_NUMBER, VISIBILITY_ALL, "Z"],
 ]
 
 // todo specify in config file the output main channel, output notification channel
 
 export function getQuestions(questionSet: string) {
-    if (questionSet == "applicationquestions") return applicationquestions
-    if (questionSet == "shopquestions") return shopquestions
+    if (questionSet === "applicationquestions") return applicationquestions
+    if (questionSet === "shopquestions") return shopquestions
+    if (questionSet === "mapquestions") return mapquestions
     throw "invalid question set provided"
 }
 
@@ -58,7 +65,8 @@ const inputTypes = [
     [REQ_POS_NUMBER, "a number"],
     [REQ_ANY_NUMBER, "a number"],
     [REQ_TEXT, "some text (less than 800 characters)"],
-    [REQ_OPTIONAL_TEXT, "some text or click the button to skip"]
+    [REQ_OPTIONAL_TEXT, "some text or click the button to skip"],
+    [REQ_OPTIONAL_TEXT, "'I agree' or click the button"]
 ]
 
 function inputTypeLookup(inputType: string): string {
@@ -106,7 +114,7 @@ export async function createApplication(user: DiscordJS.User, questionSet: strin
             notificationChannel.send({embeds: [notificationEmbed]})
 
             // send response to applicant
-            return "I've sent you a DM! Start your application there! Please let a staff member know if this does not work!"
+            return "I've sent you a DM! Fill in your answers there! Please let a staff member know if this does not work!"
         } else {
             newApplication.applicationStatus = "failed"
             return "I was unable to send you a DM! Please make sure you have DMs enabled from server members!"
@@ -159,7 +167,7 @@ export async function dmReceived(messageContent: string, messageAuthor: DiscordJ
 // returns 1 for success
 // returns 2 for failed ign check
 async function validateAnswer(text: string, rule: String): Promise<number> {
-    if (rule === "IGN") {
+    if (rule === REQ_IGN) {
         text = unescapeFormatting(text) // removes any backslashes that may have been entered by the applicant
         const a = await usernameCheck(text) // test that supplied test exists on the Mojang database
         const b = verifyUsernameInput(text) // test that the supplied text matches the standard for usernames
@@ -169,14 +177,24 @@ async function validateAnswer(text: string, rule: String): Promise<number> {
         if (a && b) return 1
         return 0
     }
-    else if (rule === "NUMBER") {
+    else if (rule === REQ_POS_NUMBER) {
         const regex = new RegExp('^\\d+(\\.\\d)?\\d?$')
         const regexSuccess = regex.test(<string>text)
         if (regexSuccess) return 1
         return 0
     }
-    else if (rule === "TEXT" || rule === "OPTIONAL_TEXT") {
+    else if (rule === REQ_ANY_NUMBER) {
+        const regex = new RegExp('^-?\\d+(\\.\\d)?$')
+        const regexSuccess = regex.test(<string>text)
+        if (regexSuccess) return 1
+        return 0
+    }
+    else if (rule === REQ_TEXT || rule === REQ_OPTIONAL_TEXT) {
         if (text.length < 800) return 1
+        return 0
+    }
+    else if (rule === REQ_AGREE) {
+        if (text == "I agree") return 1
         return 0
     }
     return -1
@@ -231,6 +249,13 @@ function generateButtons(playerApplication: InProgressApplication, questionNo: n
         const skipButton = new MessageButton()
             .setCustomId(`application,skip`)
             .setLabel(`⏭ Skip question`)
+            .setStyle('SECONDARY')
+        messageActionRow.addComponents(skipButton)
+    }
+    if (questionNo < playerApplication.getQuestionSet().length && playerApplication.getQuestionSet()[questionNo][1] === REQ_AGREE) {
+        const skipButton = new MessageButton()
+            .setCustomId(`application,agree`)
+            .setLabel(`☑️ I agree`)
             .setStyle('SECONDARY')
         messageActionRow.addComponents(skipButton)
     }
@@ -299,8 +324,18 @@ export async function buttonSkipQuestion(user: DiscordJS.User) {
     if (playerApplication == null) {
         await user.send(`You don't have an application in progress.`)
     }
-    else if (playerApplication.getQuestionSet()[playerApplication.currentQuestionNo][1] === "OPTIONAL_TEXT") {
+    else if (playerApplication.getQuestionSet()[playerApplication.currentQuestionNo][1] === REQ_OPTIONAL_TEXT) {
         await dmReceived('N/A', user)
+    }
+}
+
+export async function buttonAgreeQuestion(user: DiscordJS.User) {
+    const playerApplication =  lookupApplication(user.id)
+    if (playerApplication == null) {
+        await user.send(`You don't have an application in progress.`)
+    }
+    else if (playerApplication.getQuestionSet()[playerApplication.currentQuestionNo][1] === REQ_AGREE) {
+        await dmReceived('I agree', user)
     }
 }
 
@@ -327,8 +362,6 @@ export async function buttonPostApplication(user: DiscordJS.User) {
         .setDescription(application)
         .setFooter({text: `Applicant: ${user.username}\nID: ${user.id}`})
         .setColor(`#ff1541`)
-
-    if (containsRulePhrase(application)) playerApplication.rulePhraseDetected = true
 
     let appChannel = client.channels.cache.get(APPLICATION_CHANNEL_ID)
     if (appChannel == null || !appChannel.isText()) {

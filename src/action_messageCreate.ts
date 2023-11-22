@@ -1,5 +1,5 @@
 import * as DiscordJS from "discord.js"
-import {Client, MessageActionRow, MessageButton, MessageEmbed, TextChannel} from "discord.js"
+import {Client, Message, MessageActionRow, MessageButton, MessageEmbed, TextChannel} from "discord.js"
 import {
     MAIN_ANNOUNCEMENT_CHANNEL,
     MESSAGES_TO_ROBERT_CHANNEL_ID, ROBERT_USER_ID, SERVER_NAME
@@ -45,6 +45,32 @@ export async function messageCreate(client: Client, message: DiscordJS.Message) 
                     .setStyle('PRIMARY'),
             )
         message.channel.send(({embeds: [applicationEmbed], components: [startApplicationButton]}))
+    }
+
+    // if message is generatemapbutton then create an embed with the maps/shops buttons
+    if (message.content === "gmb" || message.content == "generatemapbutton") {
+        const applicationButtons = new MessageActionRow()
+            .addComponents(
+                new MessageButton()
+                    .setCustomId(`application,start,shopquestions`)
+                    .setLabel(`🛍️ Start a shop application`)
+                    .setStyle('PRIMARY')
+                ,
+                new MessageButton()
+                    .setCustomId(`application,start,mapquestions`)
+                    .setLabel(`🗺️ Post your base coordinates`)
+                    .setStyle('PRIMARY')
+                ,
+                new MessageButton()
+                    .setCustomId(`application,start,removemap`)
+                    .setLabel(`❌ Remove your base coordinates`)
+                    .setStyle('DANGER')
+            )
+        message.channel.send(({components: [applicationButtons]}))
+    }
+    // if message is generatemapbutton then create an embed with the maps/shops buttons
+    if (message.content === "blank") {
+        message.channel.send("️")
     }
 
     await debug_messageCreate(message)

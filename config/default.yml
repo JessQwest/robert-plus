@@ -9,6 +9,26 @@ server-info:
   server-id: ''
 
 application:
+  # determines which applications are currently accepting invitations
+  server-application:
+    enabled: true
+    require-majority-vote: true
+    full-post-channel: 0
+    summary-post-channel: 0
+    notification-post-channel: 0
+
+  shop-application:
+    enabled: true
+    require-majority-vote: false
+    full-post-channel: 0
+    summary-post-channel: 0
+    notification-post-channel: 0
+    cumulative-message-id:
+
+  map-coordinate:
+    enabled: true
+    map-message-id: 0
+
   # The ID of the application server
   application-server-id: ''
 
@@ -129,3 +149,6 @@ debug-mode:
   debuguser: 'mainuser'
   debugpassword: 'abcd1234%'
   debugdatabase: 'whitelistTestDatabase'
+
+  cumulative-map-id: 0
+  cumulative-shop-id: 0

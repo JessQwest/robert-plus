@@ -8,7 +8,7 @@ import {
     TextChannel
 } from "discord.js"
 import {
-    capitalizeFirstLetter,
+    capitalizeFirstLetter, containsRulePhrase,
     escapeFormatting,
     unescapeFormatting,
     verifyUsernameInput
@@ -53,7 +53,6 @@ export class InProgressApplication {
     public startTimestamp: number // the time that the application was created
     public submittedTimestamp: number = 0 // the time the application was submitted
     public currentQuestionNo: number = 0 // which question number the applicant is currently working on
-    public rulePhraseDetected: boolean = false // TODO remove this
     public questionSet: string // what set of questions this application pertains to
     public answers: string[] = [] // the answers to the questions in the application
 
@@ -79,6 +78,11 @@ export class InProgressApplication {
     }
     getQuestionSet() {
         return getQuestions(this.questionSet)
+    }
+
+    checkForRulePhrase(): boolean {
+        let fullAnswers = this.answers.join()
+        return containsRulePhrase(fullAnswers)
     }
 }
 
@@ -124,7 +128,7 @@ export async function processNewApplication(application: InProgressApplication) 
     else if (applicationLength < 1350) applicationLengthDescription = "Amazing!"
     else applicationLengthDescription = "WOAH!"
 
-    const rulePhraseDetectedString: string = application.rulePhraseDetected ? "Yes" : "No"
+    const rulePhraseDetectedString: string = application.checkForRulePhrase() ? "Yes" : "No"
 
     applicationReviewDescription = `Discord Name: ${application.discordUsername}\n${applicationReviewDescription}${capitalizeFirstLetter(RULE_PHRASE_TEXT)}s Detected: ${rulePhraseDetectedString}\nApplication Size: ${applicationLengthDescription}`
     applicationNotificationDescription = `Discord Name: ${application.discordUsername}\n${applicationNotificationDescription}${capitalizeFirstLetter(RULE_PHRASE_TEXT)}s Detected: ${rulePhraseDetectedString}`
@@ -134,7 +138,6 @@ export async function processNewApplication(application: InProgressApplication) 
         .setColor("#bdbc4b")
         .setTitle("New Application - Please vote")
         .setDescription(applicationReviewDescription)
-        .setFooter({text: `${application.discordId},${application.applicationMessageId}`})
 
 
     await applicationChannel.send("@everyone")
@@ -161,7 +164,7 @@ export async function processNewApplication(application: InProgressApplication) 
         await applicationChannel.send("This IGN doesnt look quite right. Reply to the application message with !(ign) if it is wrong")
     }
 
-    if (!application.rulePhraseDetected) {
+    if (!application.checkForRulePhrase()) {
         postRuleRejectButtons(application.uniqueIdentifier ,application.discordId, applicationTextChannel, application.applicationMessageId)
     }
 
