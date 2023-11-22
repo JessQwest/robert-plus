@@ -51,6 +51,7 @@ export class InProgressApplication {
     public applicationSummaryId: string = "" // id of message with the application summary
     public applicationSummaryUrl: string = "" // url link to the application summary
     public startTimestamp: number // the time that the application was created
+    public submittedTimestamp: number = 0 // the time the application was submitted
     public currentQuestionNo: number = 0 // which question number the applicant is currently working on
     public rulePhraseDetected: boolean = false // TODO remove this
     public questionSet: string // what set of questions this application pertains to
@@ -168,7 +169,7 @@ export async function processNewApplication(application: InProgressApplication) 
 
     // export application data to database
     con.query(`INSERT INTO applicationhistory(dcUserId, messageId, messageTimestamp, messageURL, mcUsername, mcUuid, status) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [application.discordId, application.applicationMessageId, application.startTimestamp, application.applicationMessageUrl, application.uniqueIdentifier, mcUuid, "unknown"], (err: any) => {
+        [application.discordId, application.applicationMessageId, application.submittedTimestamp, application.applicationMessageUrl, application.uniqueIdentifier, mcUuid, "unknown"], (err: any) => {
             if (err) {
                 console.error('Error inserting data:', err)
             } else {

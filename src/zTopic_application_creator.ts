@@ -344,6 +344,7 @@ export async function buttonPostApplication(user: DiscordJS.User) {
     let uniqueIdentifier = playerApplication.getQuestionSet().findIndex(item => item[2] === VISIBILITY_ALL_UNIQUE_IDENTIFIER)
     playerApplication.uniqueIdentifier = playerApplication.answers[uniqueIdentifier]
 
+    playerApplication.submittedTimestamp = Date.now()
     await processNewApplication(playerApplication)
 
     playerApplication.applicationStatus = "active"
