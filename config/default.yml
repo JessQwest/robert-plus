@@ -23,7 +23,7 @@ application:
     full-post-channel: 0
     summary-post-channel: 0
     notification-post-channel: 0
-    cumulative-message-id:
+    cumulative-message-id: 0
 
   map-coordinate:
     enabled: true

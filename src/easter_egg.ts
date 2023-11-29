@@ -25,14 +25,6 @@ export async function easter_egg_messageCreate(message: DiscordJS.Message) {
         }
     }
 
-    // if sage sends a message
-    if(message.author.id === "309991624270675969") {
-        let randomInt = Math.floor(Math.random() * 1000)
-        if (randomInt == 1) {
-            await message.reply(":ok:")
-        }
-    }
-
     // if someone says A
     if (message.content === "A") {
         let randomInt = Math.floor(Math.random() * 20)
