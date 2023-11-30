@@ -1,9 +1,12 @@
 import * as DiscordJS from "discord.js"
 import {containsRulePhrase, unescapeFormatting, verifyUsernameInput} from "./utility"
-import {MessageActionRow, MessageButton, MessageEmbed} from "discord.js"
+import {MessageActionRow, MessageButton, MessageEmbed, TextChannel} from "discord.js"
 import {
-    APPLICATION_CHANNEL_ID,
-    APPLICATION_NOTIFICATION_CHANNEL_ID,
+    APPLICATION_CHANNEL_ID, APPLICATION_MAP_CHANNEL_ID, APPLICATION_MAP_FORM_CHANNEL_ID, APPLICATION_MAP_MESSAGE_ID,
+    APPLICATION_NOTIFICATION_CHANNEL_ID, APPLICATION_SHOP_CHANNEL_ID,
+    APPLICATION_SHOP_NOTIFICATION_CHANNEL_ID,
+    APPLICATION_SHOP_VOTING_CHANNEL_ID,
+    APPLICATION_VOTING_CHANNEL_ID,
     client,
     SERVER_NAME
 } from "./index"
@@ -23,6 +26,10 @@ export const VISIBILITY_REVIEW_ONLY = "REVIEW_ONLY"
 export const VISIBILITY_NOTIFICATION_ONLY = "NOTIFICATION_ONLY"
 export const VISIBILITY_ALL = "ALL"
 export const VISIBILITY_ALL_UNIQUE_IDENTIFIER = "ALL_UNIQUE_IDENTIFIER"
+
+export const QUESTION_SET_APPLICATION = "applicationquestions"
+export const QUESTION_SET_SHOP = "shopquestions"
+export const QUESTION_SET_MAP = "mapquestions"
 
 // [Question text, validation type, visibility, short identifier]
 // visibility indicates if the response is shown in the summary to application reviewers, notification viewers, none or both
@@ -54,9 +61,9 @@ export const mapquestions = [
 // todo specify in config file the output main channel, output notification channel
 
 export function getQuestions(questionSet: string) {
-    if (questionSet === "applicationquestions") return applicationquestions
-    if (questionSet === "shopquestions") return shopquestions
-    if (questionSet === "mapquestions") return mapquestions
+    if (questionSet === QUESTION_SET_APPLICATION) return applicationquestions
+    if (questionSet === QUESTION_SET_SHOP) return shopquestions
+    if (questionSet === QUESTION_SET_MAP) return mapquestions
     throw "invalid question set provided"
 }
 
@@ -231,7 +238,7 @@ async function dmUserQuestion(user: DiscordJS.User, questionNo: number): Promise
 
 async function dmUserApplicationSubmissionConfirmation(user: DiscordJS.User) {
     let submitEmbed = new MessageEmbed()
-        .setTitle(`Would you like to submit your application?`)
+        .setTitle(`Would you like to submit these answers?`)
         .setColor(`#10c1e0`)
 
     const playerApplication =  lookupApplication(user.id)
@@ -363,7 +370,11 @@ export async function buttonPostApplication(user: DiscordJS.User) {
         .setFooter({text: `Applicant: ${user.username}\nID: ${user.id}`})
         .setColor(`#ff1541`)
 
-    let appChannel = client.channels.cache.get(APPLICATION_CHANNEL_ID)
+    let appChannel:  DiscordJS.AnyChannel | undefined
+    if (playerApplication.questionSet == QUESTION_SET_APPLICATION) appChannel = client.channels.cache.get(APPLICATION_CHANNEL_ID)
+    else if (playerApplication.questionSet == QUESTION_SET_SHOP) appChannel = client.channels.cache.get(APPLICATION_SHOP_CHANNEL_ID)
+    else if (playerApplication.questionSet == QUESTION_SET_MAP) appChannel = client.channels.cache.get(APPLICATION_MAP_FORM_CHANNEL_ID)
+
     if (appChannel == null || !appChannel.isText()) {
         console.error(`APP CHANNEL NOT VALID NULL (jx0049)`)
         return
@@ -374,8 +385,6 @@ export async function buttonPostApplication(user: DiscordJS.User) {
         playerApplication.applicationMessageUrl = message.url
     })
 
-    let uniqueIdentifier = playerApplication.getQuestionSet().findIndex(item => item[2] === VISIBILITY_ALL_UNIQUE_IDENTIFIER)
-    playerApplication.uniqueIdentifier = playerApplication.answers[uniqueIdentifier]
 
     playerApplication.submittedTimestamp = Date.now()
     await processNewApplication(playerApplication)

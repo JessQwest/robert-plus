@@ -20,4 +20,9 @@ export function setupDatabaseTables() {
         if (err) throw err
         console.log(`applicationHistory table created if not exists`)
     })
+
+    con.query('CREATE TABLE IF NOT EXISTS `map` (`discordId` VARCHAR(20) NOT NULL, `text` VARCHAR(200) NOT NULL, PRIMARY KEY (`discordId`))', function (err: any, result: any, fields: any) {
+        if (err) throw err
+        console.log(`map table created if not exists`)
+    })
 }

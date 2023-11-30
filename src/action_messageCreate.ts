@@ -7,7 +7,7 @@ import {
 import {debug_messageCreate} from "./debug"
 import {easter_egg_messageCreate} from "./easter_egg"
 import {changeApplicationIGN} from "./zTopic_application_management"
-import {dmReceived} from "./zTopic_application_creator"
+import {dmReceived, QUESTION_SET_APPLICATION, QUESTION_SET_MAP, QUESTION_SET_SHOP} from "./zTopic_application_creator"
 
 
 export async function messageCreate(client: Client, message: DiscordJS.Message) {
@@ -52,17 +52,17 @@ export async function messageCreate(client: Client, message: DiscordJS.Message) 
         const applicationButtons = new MessageActionRow()
             .addComponents(
                 new MessageButton()
-                    .setCustomId(`application,start,shopquestions`)
+                    .setCustomId(`application,start,${QUESTION_SET_SHOP}`)
                     .setLabel(`🛍️ Start a shop application`)
                     .setStyle('PRIMARY')
                 ,
                 new MessageButton()
-                    .setCustomId(`application,start,mapquestions`)
+                    .setCustomId(`application,start,${QUESTION_SET_MAP}`)
                     .setLabel(`🗺️ Post your base coordinates`)
                     .setStyle('PRIMARY')
                 ,
                 new MessageButton()
-                    .setCustomId(`application,start,removemap`)
+                    .setCustomId(`application,removemap`)
                     .setLabel(`❌ Remove your base coordinates`)
                     .setStyle('DANGER')
             )

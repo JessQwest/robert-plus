@@ -13,7 +13,7 @@ import fetch from "node-fetch"
 import {
     ALERT_CHANNEL, APPLICATION_CHANNEL_ID, APPLICATION_NOTIFICATION_CHANNEL_ID,
     BOT_INFO_CHANNEL_ID, client,
-    con, MAIN_SERVER_ID,
+    con, IS_APPLICATION_ENABLED, IS_MAP_APPLICATION_ENABLED, IS_SHOP_APPLICATION_ENABLED, MAIN_SERVER_ID,
     MUSEUM_ROLE_ID, NO_EMOJI, RULE_PHRASE_EMOJI,
     RULE_PHRASE_TEXT, SERVER_APPLICATION_URL,
     SERVER_NAME,
@@ -23,14 +23,19 @@ import {
 // @ts-ignore
 import { v4 as uuidv4 } from 'uuid'
 import {nameToUuid} from "./api"
-import {applicationStatusDictionary, removeActiveApplication} from "./zTopic_application_management"
+import {
+    applicationStatusDictionary,
+    rebuildMapMessage,
+    removeActiveApplication,
+    removeMapCoord
+} from "./zTopic_application_management"
 import {
     buttonAgreeQuestion,
     buttonCancelApplication,
     buttonGotoNextQuestion,
     buttonGotoPreviousQuestion,
     buttonPostApplication, buttonSkipQuestion,
-    createApplication, dmReceived
+    createApplication, dmReceived, QUESTION_SET_APPLICATION, QUESTION_SET_MAP, QUESTION_SET_SHOP
 } from "./zTopic_application_creator"
 import {createRoleButton, manageUserRole} from "./zTopic_role_manager"
 
@@ -65,6 +70,21 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
     // check if an application button was pressed
     if (splitCustomId[0] === "application") {
         if (splitCustomId[1] === "start") {
+            //check if creating application is allowed
+            const applicationType = splitCustomId[2]
+            console.log(`Application type: ${applicationType}`)
+            console.log(IS_SHOP_APPLICATION_ENABLED)
+            if (applicationType == QUESTION_SET_APPLICATION && IS_APPLICATION_ENABLED == false) {
+                await i.reply({ ephemeral: true, content: `Applications are currently disabled. Please try again later.` })
+                return
+            } else if (applicationType == QUESTION_SET_SHOP && IS_SHOP_APPLICATION_ENABLED == false) {
+                await i.reply({ ephemeral: true, content: `Shop applications are currently disabled. Please try again later.` })
+                return
+            } else if (applicationType == QUESTION_SET_MAP && IS_MAP_APPLICATION_ENABLED == false) {
+                await i.reply({ ephemeral: true, content: `Updating coordinates is currently disabled. Please try again later.` })
+                return
+            }
+
             const startApplicationResponse = await createApplication(i.user, splitCustomId[2])
             await i.reply({ ephemeral: true, content: startApplicationResponse })
             return
@@ -72,33 +92,33 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
         else if (splitCustomId[1] === "previous") {
             await buttonGotoPreviousQuestion(i.user)
             await i.deferUpdate()
-            return
         }
         else if (splitCustomId[1] === "next") {
             await buttonGotoNextQuestion(i.user)
             await i.deferUpdate()
-            return
         }
         else if (splitCustomId[1] === "submit") {
             await buttonPostApplication(i.user)
             await i.deferUpdate()
-            return
         }
         else if (splitCustomId[1] === "cancel") {
             await buttonCancelApplication(i.user)
             await i.deferUpdate()
-            return
         }
         else if (splitCustomId[1] === "skip") {
             await buttonSkipQuestion(i.user)
             await i.deferUpdate()
-            return
         }
         else if (splitCustomId[1] === "agree") {
             await buttonAgreeQuestion(i.user)
             await i.deferUpdate()
-            return
         }
+        else if (splitCustomId[1] === "removemap") {
+            removeMapCoord(i.user.id)
+            await rebuildMapMessage()
+            await i.reply({ephemeral: true, content: "Your map coordinates have been removed if you had any."})
+        }
+        return
     }
 
     // will be in format role,<add/remove>,<roleId>. userId is taken from interaction

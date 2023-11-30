@@ -59,7 +59,7 @@ export async function usernameCheck(username: string, textChannel: DiscordJS.Tex
     })
 }
 
-export async function uuidToUsername(uuId: String): Promise<String> {
+export async function uuidToUsername(uuId: string): Promise<string> {
     console.log(`https://sessionserver.mojang.com/session/minecraft/profile/${uuId}`)
     const {
         id,

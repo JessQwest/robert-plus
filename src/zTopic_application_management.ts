@@ -14,7 +14,11 @@ import {
     verifyUsernameInput
 } from "./utility"
 import {
-    APPLICATION_CHANNEL_ID, APPLICATION_NOTIFICATION_CHANNEL_ID,
+    APPLICATION_CHANNEL_ID,
+    APPLICATION_MAP_CHANNEL_ID,
+    APPLICATION_MAP_MESSAGE_ID,
+    APPLICATION_NOTIFICATION_CHANNEL_ID, APPLICATION_SHOP_NOTIFICATION_CHANNEL_ID,
+    APPLICATION_SHOP_VOTING_CHANNEL_ID,
     APPLICATION_VOTING_CHANNEL_ID,
     client,
     con,
@@ -23,13 +27,13 @@ import {
     RULE_PHRASE_TEXT,
     YES_EMOJI
 } from "./index"
-import {nameToUuid, usernameCheck} from "./api"
+import {discordIdToMinecraftUuid, nameToUuid, usernameCheck, uuidToUsername} from "./api"
 import {
-    getQuestions,
+    getQuestions, QUESTION_SET_APPLICATION, QUESTION_SET_MAP, QUESTION_SET_SHOP,
     VISIBILITY_ALL, VISIBILITY_ALL_UNIQUE_IDENTIFIER,
     VISIBILITY_NOTIFICATION_ONLY,
     VISIBILITY_REVIEW_ONLY
-} from "./zTopic_application_creator";
+} from "./zTopic_application_creator"
 
 export const applicationStatusDictionary: Record<string, string> = {
     'accept': 'Application Accepted',
@@ -87,8 +91,43 @@ export class InProgressApplication {
 }
 
 export async function processNewApplication(application: InProgressApplication) {
-    const applicationChannel = client.channels.cache.get(APPLICATION_VOTING_CHANNEL_ID) //channel to vote in
-    const applicationNotificationChannel = client.channels.cache.get(APPLICATION_NOTIFICATION_CHANNEL_ID) //channel to notify basic app info
+
+    // work out what channel to post in
+    let applicationChannel: DiscordJS.AnyChannel | undefined
+    let applicationNotificationChannel: DiscordJS.AnyChannel | undefined
+    if (application.questionSet == QUESTION_SET_APPLICATION) {
+        applicationChannel = client.channels.cache.get(APPLICATION_VOTING_CHANNEL_ID) //channel to vote in
+        applicationNotificationChannel = client.channels.cache.get(APPLICATION_NOTIFICATION_CHANNEL_ID) //channel to notify basic app info
+    } else if (application.questionSet == QUESTION_SET_SHOP) {
+        applicationChannel = client.channels.cache.get(APPLICATION_SHOP_VOTING_CHANNEL_ID) //channel to vote in
+        applicationNotificationChannel = client.channels.cache.get(APPLICATION_SHOP_NOTIFICATION_CHANNEL_ID) //channel to notify basic app info
+    } else if (application.questionSet == QUESTION_SET_MAP) {
+        // create the message with the coordinate text
+        let mcUuid = await discordIdToMinecraftUuid(application.discordId) ?? "unknown"
+        if (mcUuid == "unknown") return
+        let mcUsername = await uuidToUsername(mcUuid) ?? "unknown"
+        if (mcUsername == "unknown") return
+
+        let coordinateText = `${escapeFormatting(mcUsername)}: ${application.answers[0]}, ${application.answers[1]}`
+        // update the message in the database
+        con.query(
+            'INSERT INTO `map` (`discordId`, `text`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `text` = VALUES(`text`)',
+            [application.discordId, coordinateText],
+            function (err: any, result: any, fields: any) {
+                if (err) {
+                    console.error(err)
+                    return
+                }
+                // rebuild the edited message
+                rebuildMapMessage()
+            }
+        )
+    }
+
+    let uniqueIdentifier = application.getQuestionSet().findIndex(item => item[2] === VISIBILITY_ALL_UNIQUE_IDENTIFIER)
+    application.uniqueIdentifier = application.answers[uniqueIdentifier]
+
+
     if (applicationChannel == null || !(applicationChannel instanceof TextChannel)) {
         console.log(`${APPLICATION_CHANNEL_ID} is not a valid text channel for application information (jx0011)`)
         return
@@ -110,7 +149,7 @@ export async function processNewApplication(application: InProgressApplication) 
         let questionShortText = currentQuestion[3]
         let visibility = currentQuestion[2]
         if (visibility == VISIBILITY_REVIEW_ONLY || visibility == VISIBILITY_ALL || visibility == VISIBILITY_ALL_UNIQUE_IDENTIFIER) {
-            applicationReviewDescription += `${questionShortText}: ${applicantAnswer}\n`
+            applicationReviewDescription += `${questionShortText}: ${escapeFormatting(applicantAnswer)}\n`
         }
         if (visibility == VISIBILITY_NOTIFICATION_ONLY || visibility == VISIBILITY_ALL || visibility == VISIBILITY_ALL_UNIQUE_IDENTIFIER) {
             applicationNotificationDescription += `${questionShortText}: ${applicantAnswer}\n`
@@ -184,6 +223,41 @@ export async function processNewApplication(application: InProgressApplication) 
 
     let message = applicationChannel.messages.cache.get(application.applicationMessageId)
     if (message instanceof DiscordJS.Message) await message.react("🇵")
+}
+
+export async function rebuildMapMessage() {
+    // rebuild the edited message
+    let mapChannel = client.channels.cache.get(APPLICATION_MAP_CHANNEL_ID)
+    if (!(mapChannel instanceof TextChannel)) return
+    let mapMessage = await mapChannel.messages.fetch(APPLICATION_MAP_MESSAGE_ID)
+
+    con.query(
+        'SELECT `text` FROM `map`',
+        function (err: Error | null, result: any[]) {
+            if (err) {
+                console.error(err)
+                return
+            }
+
+            const texts: string[] = result.map(row => row.text)
+            const concatenatedText: string = texts.join('\n')
+
+            mapMessage.edit(concatenatedText)
+        }
+    )
+}
+
+export function removeMapCoord(discordId: String) {
+    con.query(
+        'DELETE FROM `map` WHERE `discordId` = ?',
+        [discordId],
+        function (err: Error | null, result: any) {
+            if (err) {
+                console.error(err)
+                return
+            }
+        }
+    )
 }
 
 export async function postApplicationHistory(messageChannel: TextChannel, discordId: string, mcUsername = '') {

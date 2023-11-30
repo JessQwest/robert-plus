@@ -50,11 +50,25 @@ export const BOT_INFO_CHANNEL_ID = config.get('channel-ids.bot-info')
 export const BOT_LOG_CHANNEL_ID = config.get('channel-ids.bot-log')
 export const STAFF_BOT_LOG_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : config.get('channel-ids.staff-bot-log')
 export const MESSAGES_TO_ROBERT_CHANNEL_ID = config.get('channel-ids.messages-to-robert')
-export const APPLICATION_NOTIFICATION_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : config.get('channel-ids.application-notification')
 export const MAIN_ANNOUNCEMENT_CHANNEL = DEBUGMODE ? DEBUG_CHANNEL_ID : config.get('features.announcement-thumbs-channel-id')
-export const APPLICATION_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : config.get('channel-ids.application-posted') // channel where applications are posted
-export const APPLICATION_VOTING_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : config.get('channel-ids.application-voting') // channel where applications summaries are posted and voted on
 export const BIRTHDAY_MESSAGE_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : config.get('features.birthday-message-channel-id') // for posting birthday messages
+
+export const IS_APPLICATION_ENABLED = config.get('application.server-application.enabled')
+export const APPLICATION_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : config.get('application.server-application.full-post-channel') // channel where applications are posted
+export const APPLICATION_VOTING_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : config.get('application.server-application.summary-post-channel') // channel where applications summaries are posted and voted on
+export const APPLICATION_NOTIFICATION_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : config.get('application.server-application.notification-post-channel') // channel with basic notifications
+
+
+export const IS_SHOP_APPLICATION_ENABLED = config.get('application.shop-application.enabled')
+export const APPLICATION_SHOP_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : config.get('application.shop-application.full-post-channel') // channel where shop applications are posted
+export const APPLICATION_SHOP_VOTING_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : config.get('application.shop-application.summary-post-channel') // channel where shop applications summaries are posted and voted on
+export const APPLICATION_SHOP_NOTIFICATION_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : config.get('application.shop-application.notification-post-channel') // channel with basic notifications for shop applications
+
+
+export const IS_MAP_APPLICATION_ENABLED = config.get('application.map-coordinate.enabled')
+export const APPLICATION_MAP_FORM_CHANNEL_ID = DEBUGMODE ? config.get('debug-mode.map-form-post-channel-id') : config.get('application.map-coordinate.map-form-post-channel-id') // channel where the map message form is posted
+export const APPLICATION_MAP_CHANNEL_ID = DEBUGMODE ? config.get('debug-mode.map-channel-id') : config.get('application.map-coordinate.map-channel-id') // channel where the map message is
+export const APPLICATION_MAP_MESSAGE_ID = DEBUGMODE ? config.get('debug-mode.map-message-id') : config.get('application.map-coordinate.map-message-id') // message id of the map message
 
 // server constants
 export const APPLICATION_SERVER_ID = DEBUGMODE ? config.get('debug-mode.debug-server-id') : config.get('application.application-server-id')
