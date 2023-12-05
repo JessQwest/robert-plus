@@ -13,7 +13,7 @@ import fetch from "node-fetch"
 import {
     ALERT_CHANNEL, APPLICATION_CHANNEL_ID, APPLICATION_NOTIFICATION_CHANNEL_ID,
     BOT_INFO_CHANNEL_ID, client,
-    con, IS_APPLICATION_ENABLED, IS_MAP_APPLICATION_ENABLED, IS_SHOP_APPLICATION_ENABLED, MAIN_SERVER_ID,
+    con, DEBUGMODE, IS_APPLICATION_ENABLED, IS_MAP_APPLICATION_ENABLED, IS_SHOP_APPLICATION_ENABLED, MAIN_SERVER_ID,
     MUSEUM_ROLE_ID, NO_EMOJI, RULE_PHRASE_EMOJI,
     RULE_PHRASE_TEXT, SERVER_APPLICATION_URL,
     SERVER_NAME,
@@ -72,8 +72,10 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
         if (splitCustomId[1] === "start") {
             //check if creating application is allowed
             const applicationType = splitCustomId[2]
-            console.log(`Application type: ${applicationType}`)
-            console.log(IS_SHOP_APPLICATION_ENABLED)
+            if (DEBUGMODE && i.user.id != "252818596777033729") {
+                await i.reply({ ephemeral: true, content: `Applications are currently disabled. Please try again later.` })
+                return
+            }
             if (applicationType == QUESTION_SET_APPLICATION && IS_APPLICATION_ENABLED == false) {
                 await i.reply({ ephemeral: true, content: `Applications are currently disabled. Please try again later.` })
                 return

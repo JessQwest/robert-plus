@@ -390,7 +390,7 @@ export async function buttonPostApplication(user: DiscordJS.User) {
     await processNewApplication(playerApplication)
 
     playerApplication.applicationStatus = "active"
-    await user.send(`Your application has been submitted.`)
+    await user.send(`Your answers have been submitted.`)
 
     console.info("APPLICATION SUBMITTED")
 }
