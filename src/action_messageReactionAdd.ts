@@ -21,7 +21,7 @@ export async function messageReactionAdd(client: Client, reaction: MessageReacti
     console.log(`messageReactionAdd triggered`)
 
     if (reaction.message.content != null && reaction.message.content.toLowerCase().includes("what is this emoji") && reaction.emoji.name != null && reaction.emoji.id != null) {
-        await reaction.message.reply(reaction.emoji.name.toString() + reaction.emoji.id.toString())
+        await reaction.message.reply(`\`<:${reaction.emoji.name.toString()}:${reaction.emoji.id.toString()}>\``)
     }
 
     const userApplication = lookupApplicationByMessageSummaryId(reaction.message.id)

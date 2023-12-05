@@ -60,6 +60,12 @@ export async function easter_egg_messageCreate(message: DiscordJS.Message) {
         return
     }
 
+    // if someone says E or T react with trans heart
+    if (message.content === "E" || message.content === "T") {
+        await message.react("<:transheart:1170071007239876659>")
+        return
+    }
+
     // if someone says azurelanternlit
     if (message.content === "azurelanternlit" && message.author != client.user) {
         if(message.author.id === "749814178595864678") {
