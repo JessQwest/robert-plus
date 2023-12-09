@@ -27,7 +27,9 @@ application:
 
   map-coordinate:
     enabled: true
-    map-message-id: 0
+    map-form-post-channel-id: ''
+    map-channel-id: ''
+    map-message-id: ''
 
   # The ID of the application server
   application-server-id: ''
@@ -106,15 +108,6 @@ channel-ids:
   # Any DM's sent to the bot are forwarded to this channel
   messages-to-robert: ''
 
-  # Notifications regarding applications are sent to this channel
-  application-notification: ''
-
-  # Where to post full applications
-  application-posted: ''
-
-  # Where applications are voted on
-  application-voting: ''
-
 other-ids:
   # The id of the robert+ user
   robert-plus-id: ''
@@ -150,5 +143,7 @@ debug-mode:
   debugpassword: 'abcd1234%'
   debugdatabase: 'whitelistTestDatabase'
 
-  cumulative-map-id: 0
-  cumulative-shop-id: 0
+  map-form-post-channel-id: ''
+  map-channel-id: ''
+  map-message-id: ''
+  shop-message-id: ''

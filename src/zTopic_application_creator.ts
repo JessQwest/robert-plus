@@ -47,9 +47,10 @@ export const applicationquestions = [
 ]
 
 export const shopquestions = [
+    ["What is your IGN? If multiple people will share the shop, enter all names.", REQ_TEXT, VISIBILITY_ALL, "Shop owners"],
+    ["What do you wish to sell?", REQ_TEXT, VISIBILITY_ALL, "Shop type"],
     ["What is your shop X coordinate?", REQ_ANY_NUMBER, VISIBILITY_ALL, "X"],
     ["What is your shop Z coordinate?", REQ_ANY_NUMBER, VISIBILITY_ALL, "Z"],
-    ["What do you wish to sell?", REQ_TEXT, VISIBILITY_ALL, "Shop type"],
     ["I have read and I agree to the shop rules. I understand that if my shop is unstocked for a week I will get a 7 day notice to stock it via Discord, after which, without exceptional circumstances, the shop will be destroyed without notice.", REQ_AGREE, VISIBILITY_NONE, "Agree"]
 ]
 
@@ -73,7 +74,8 @@ const inputTypes = [
     [REQ_ANY_NUMBER, "a number"],
     [REQ_TEXT, "some text (less than 800 characters)"],
     [REQ_OPTIONAL_TEXT, "some text or click the button to skip"],
-    [REQ_OPTIONAL_TEXT, "'I agree' or click the button"]
+    [REQ_OPTIONAL_TEXT, "'I agree' or click the button"],
+    [REQ_AGREE, "'I agree' or click the button below"]
 ]
 
 function inputTypeLookup(inputType: string): string {
@@ -84,8 +86,17 @@ function inputTypeLookup(inputType: string): string {
 }
 
 // looks up an application by the user that is currently being created
-function lookupApplication(discordId: string, applicationStatus: string = "creating"): InProgressApplication | undefined {
-    return activeApplications.find(item => item.discordId === discordId && item.applicationStatus == "creating")
+export function lookupApplication(discordId: string, applicationStatus: string = "creating"): InProgressApplication | undefined {
+    if (applicationStatus == "*") return activeApplications.find(item => item.discordId === discordId)
+    return activeApplications.find(item => item.discordId === discordId && item.applicationStatus == applicationStatus)
+}
+
+export function lookupApplicationByMessageSummaryId(messageId: string): InProgressApplication | undefined {
+    return activeApplications.find(item => item.applicationSummaryId === messageId && item.applicationStatus == "active")
+}
+
+export function lookupApplicationByUniqueIdentifier(uniqueIdentifier: string): InProgressApplication | undefined {
+    return activeApplications.find(item => item.uniqueIdentifier === uniqueIdentifier && item.applicationStatus == "active")
 }
 
 export async function createApplication(user: DiscordJS.User, questionSet: string): Promise<string> {
@@ -115,10 +126,12 @@ export async function createApplication(user: DiscordJS.User, questionSet: strin
                 return "An error occurred while sending the DM. Please let a staff member know."
             }
 
-            let notificationEmbed = new MessageEmbed()
-                .setTitle(`${user.username} has started an application!`)
-                .setColor(`#f45858`)
-            notificationChannel.send({embeds: [notificationEmbed]})
+            if (questionSet == QUESTION_SET_APPLICATION) {
+                let notificationEmbed = new MessageEmbed()
+                    .setTitle(`${user.username} has started an application!`)
+                    .setColor(`#f45858`)
+                notificationChannel.send({embeds: [notificationEmbed]})
+            }
 
             // send response to applicant
             return "I've sent you a DM! Fill in your answers there! Please let a staff member know if this does not work!"
@@ -201,7 +214,7 @@ async function validateAnswer(text: string, rule: String): Promise<number> {
         return 0
     }
     else if (rule === REQ_AGREE) {
-        if (text == "I agree") return 1
+        if (text.toLowerCase() == "i agree") return 1
         return 0
     }
     return -1
@@ -376,15 +389,13 @@ export async function buttonPostApplication(user: DiscordJS.User) {
     else if (playerApplication.questionSet == QUESTION_SET_MAP) appChannel = client.channels.cache.get(APPLICATION_MAP_FORM_CHANNEL_ID)
 
     if (appChannel == null || !appChannel.isText()) {
-        console.error(`APP CHANNEL NOT VALID NULL (jx0049)`)
-        return
+        console.log(`Supplied application channel is not valid`)
+    } else {
+        await appChannel.send({embeds: [finalApplicationEmbed]}).then(message => {
+            playerApplication.applicationMessageId = message.id
+            playerApplication.applicationMessageUrl = message.url
+        })
     }
-
-    await appChannel.send({embeds: [finalApplicationEmbed]}).then(message => {
-        playerApplication.applicationMessageId = message.id
-        playerApplication.applicationMessageUrl = message.url
-    })
-
 
     playerApplication.submittedTimestamp = Date.now()
     await processNewApplication(playerApplication)

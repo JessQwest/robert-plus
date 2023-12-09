@@ -71,7 +71,7 @@ async function userRoleAdded(oldMember: GuildMember | PartialGuildMember, newMem
                 const nickname = newMember.displayName
                 const username = newMember.user.username
                 const bdayName = countCharacterChanges(nickname, username) >= 4 ? `${nickname}/${username}` : nickname
-                bdayChannel.send(`Happy Birthday ${bdayName}!`)
+                bdayChannel.send(`Happy Birthday to ${bdayName}!`)
             }
             addMinecraftUserRole(role, newMember, mcUuid)
         }

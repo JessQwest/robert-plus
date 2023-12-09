@@ -1,4 +1,6 @@
 import * as DiscordJS from "discord.js"
+// @ts-ignore
+import { v4 as uuidv4 } from 'uuid'
 import {
     Message,
     MessageActionRow,
@@ -17,7 +19,10 @@ import {
     APPLICATION_CHANNEL_ID,
     APPLICATION_MAP_CHANNEL_ID,
     APPLICATION_MAP_MESSAGE_ID,
-    APPLICATION_NOTIFICATION_CHANNEL_ID, APPLICATION_SHOP_NOTIFICATION_CHANNEL_ID,
+    APPLICATION_NOTIFICATION_CHANNEL_ID,
+    APPLICATION_SHOP_CHANNEL_ID,
+    APPLICATION_SHOP_MESSAGE_ID,
+    APPLICATION_SHOP_NOTIFICATION_CHANNEL_ID,
     APPLICATION_SHOP_VOTING_CHANNEL_ID,
     APPLICATION_VOTING_CHANNEL_ID,
     client,
@@ -29,7 +34,7 @@ import {
 } from "./index"
 import {discordIdToMinecraftUuid, nameToUuid, usernameCheck, uuidToUsername} from "./api"
 import {
-    getQuestions, QUESTION_SET_APPLICATION, QUESTION_SET_MAP, QUESTION_SET_SHOP,
+    getQuestions, QUESTION_SET_APPLICATION, QUESTION_SET_MAP, QUESTION_SET_SHOP, REQ_OPTIONAL_TEXT,
     VISIBILITY_ALL, VISIBILITY_ALL_UNIQUE_IDENTIFIER,
     VISIBILITY_NOTIFICATION_ONLY,
     VISIBILITY_REVIEW_ONLY
@@ -49,7 +54,7 @@ export var activeApplications: InProgressApplication[] = []
 export class InProgressApplication {
     public discordId: string // ID of application creator
     public discordUsername: string // discord username of application creator
-    public uniqueIdentifier: string = "" // TODO remove this
+    public uniqueIdentifier: string = "" // minecraft username or random uuid for shops
     public applicationMessageId : string = "" // id of message that contains the full application
     public applicationMessageUrl: string = "" // url link to the message with the full application
     public applicationSummaryId: string = "" // id of message with the application summary
@@ -91,16 +96,20 @@ export class InProgressApplication {
 }
 
 export async function processNewApplication(application: InProgressApplication) {
-
-    // work out what channel to post in
+    // work out what channels to post in
     let applicationChannel: DiscordJS.AnyChannel | undefined
     let applicationNotificationChannel: DiscordJS.AnyChannel | undefined
     if (application.questionSet == QUESTION_SET_APPLICATION) {
         applicationChannel = client.channels.cache.get(APPLICATION_VOTING_CHANNEL_ID) //channel to vote in
         applicationNotificationChannel = client.channels.cache.get(APPLICATION_NOTIFICATION_CHANNEL_ID) //channel to notify basic app info
+
+        let uniqueIdentifier = application.getQuestionSet().findIndex(item => item[2] === VISIBILITY_ALL_UNIQUE_IDENTIFIER)
+        application.uniqueIdentifier = application.answers[uniqueIdentifier]
     } else if (application.questionSet == QUESTION_SET_SHOP) {
         applicationChannel = client.channels.cache.get(APPLICATION_SHOP_VOTING_CHANNEL_ID) //channel to vote in
         applicationNotificationChannel = client.channels.cache.get(APPLICATION_SHOP_NOTIFICATION_CHANNEL_ID) //channel to notify basic app info
+
+        application.uniqueIdentifier = uuidv4()
     } else if (application.questionSet == QUESTION_SET_MAP) {
         // create the message with the coordinate text
         let mcUuid = await discordIdToMinecraftUuid(application.discordId) ?? "unknown"
@@ -124,18 +133,6 @@ export async function processNewApplication(application: InProgressApplication) 
         )
     }
 
-    let uniqueIdentifier = application.getQuestionSet().findIndex(item => item[2] === VISIBILITY_ALL_UNIQUE_IDENTIFIER)
-    application.uniqueIdentifier = application.answers[uniqueIdentifier]
-
-
-    if (applicationChannel == null || !(applicationChannel instanceof TextChannel)) {
-        console.log(`${APPLICATION_CHANNEL_ID} is not a valid text channel for application information (jx0011)`)
-        return
-    }
-    if (applicationNotificationChannel == null || !(applicationNotificationChannel instanceof TextChannel)) {
-        console.log(`${APPLICATION_NOTIFICATION_CHANNEL_ID} is not a valid text channel for application summary (jx0041)`)
-        return
-    }
     const applicationTextChannel: TextBasedChannel = applicationChannel as DiscordJS.TextChannel
 
     let applicationReviewDescription = ""
@@ -156,73 +153,130 @@ export async function processNewApplication(application: InProgressApplication) 
         }
     }
 
-    let applicationLengthDescription: string
-    const applicationLength = totalApplicationLength
-    if (applicationLength < 110) applicationLengthDescription = "Impressively bad"
-    else if (applicationLength < 300) applicationLengthDescription = "Yikes"
-    else if (applicationLength < 360) applicationLengthDescription = "Basic"
-    else if (applicationLength < 530) applicationLengthDescription = "Decent"
-    else if (applicationLength < 770) applicationLengthDescription = "Good"
-    else if (applicationLength < 1080) applicationLengthDescription = "Very good"
-    else if (applicationLength < 1350) applicationLengthDescription = "Amazing!"
-    else applicationLengthDescription = "WOAH!"
+    // different formatting depending on what kind of application it is
+    if (application.questionSet == QUESTION_SET_APPLICATION) {
+        let applicationLengthDescription: string
+        const applicationLength = totalApplicationLength
+        if (applicationLength < 110) applicationLengthDescription = "Impressively bad"
+        else if (applicationLength < 300) applicationLengthDescription = "Yikes"
+        else if (applicationLength < 360) applicationLengthDescription = "Basic"
+        else if (applicationLength < 530) applicationLengthDescription = "Decent"
+        else if (applicationLength < 770) applicationLengthDescription = "Good"
+        else if (applicationLength < 1080) applicationLengthDescription = "Very good"
+        else if (applicationLength < 1350) applicationLengthDescription = "Amazing!"
+        else applicationLengthDescription = "WOAH!"
 
-    const rulePhraseDetectedString: string = application.checkForRulePhrase() ? "Yes" : "No"
+        const rulePhraseDetectedString: string = application.checkForRulePhrase() ? "Yes" : "No"
 
-    applicationReviewDescription = `Discord Name: ${application.discordUsername}\n${applicationReviewDescription}${capitalizeFirstLetter(RULE_PHRASE_TEXT)}s Detected: ${rulePhraseDetectedString}\nApplication Size: ${applicationLengthDescription}`
-    applicationNotificationDescription = `Discord Name: ${application.discordUsername}\n${applicationNotificationDescription}${capitalizeFirstLetter(RULE_PHRASE_TEXT)}s Detected: ${rulePhraseDetectedString}`
-
+        applicationReviewDescription = `Discord Name: ${application.discordUsername}\n${applicationReviewDescription}${capitalizeFirstLetter(RULE_PHRASE_TEXT)}s Detected: ${rulePhraseDetectedString}\nApplication Size: ${applicationLengthDescription}`
+        applicationNotificationDescription = `Discord Name: ${application.discordUsername}\n${applicationNotificationDescription}${capitalizeFirstLetter(RULE_PHRASE_TEXT)}s Detected: ${rulePhraseDetectedString}`
+    } else if (application.questionSet == QUESTION_SET_SHOP) {
+        applicationReviewDescription = `Discord Name: ${application.discordUsername}\n${applicationReviewDescription}`
+        applicationNotificationDescription = `Discord Name: ${application.discordUsername}\n${applicationNotificationDescription}`
+    }
 
     const applicationEmbedToPost = new MessageEmbed()
         .setColor("#bdbc4b")
         .setTitle("New Application - Please vote")
         .setDescription(applicationReviewDescription)
 
+    // prepare application summary
+    if (applicationChannel == null || !(applicationChannel instanceof TextChannel)) {
+        console.log(`${APPLICATION_CHANNEL_ID} is not a valid text channel for application information `)
+    } else {
 
-    await applicationChannel.send("@everyone")
-    await applicationChannel.send({embeds: [applicationEmbedToPost]})
-        .then(function (voteMessage: { react: (arg0: string) => void }) {
-            if (voteMessage instanceof Message) {
-                application.applicationSummaryId = voteMessage.id
-                application.applicationSummaryUrl = voteMessage.url
-            }
-            voteMessage.react(YES_EMOJI)
-            voteMessage.react(NO_EMOJI)
-        })
+        const messageActionRow = new MessageActionRow()
 
-    const basicApplicationEmbed = new MessageEmbed()
-        .setColor("#bdbc4b")
-        .setTitle("A new application has been sent")
-        .setDescription(applicationNotificationDescription)
+        const dismissButton = new MessageButton()
+            .setCustomId(`application,dismiss`)
+            .setLabel(`Dismiss application`)
+            .setStyle('DANGER')
+        messageActionRow.addComponents(dismissButton)
 
-    await applicationNotificationChannel.send({embeds: [basicApplicationEmbed]})
+        // if application is for a shop, add an edit button
+        if (application.questionSet == QUESTION_SET_SHOP) {
+            const editButton = new MessageButton()
+                .setCustomId(`shop,edit,${application.uniqueIdentifier}`)
+                .setLabel(`Edit answers`)
+                .setStyle('SECONDARY')
+            messageActionRow.addComponents(editButton)
+        }
 
-    // check if Mojang recognizes the username or if its spelt correctly
-    let usernameValid: Boolean = await usernameCheck(application.uniqueIdentifier, applicationChannel)
-    if (!usernameValid && !verifyUsernameInput(application.uniqueIdentifier)) {
-        await applicationChannel.send("This IGN doesnt look quite right. Reply to the application message with !(ign) if it is wrong")
+        await applicationChannel.send("@everyone")
+        await applicationChannel.send({ embeds: [applicationEmbedToPost], components: [messageActionRow] })
+            .then(function (voteMessage: { react: (arg0: string) => void }) {
+                if (voteMessage instanceof Message) {
+                    application.applicationSummaryId = voteMessage.id
+                    application.applicationSummaryUrl = voteMessage.url
+                }
+                voteMessage.react(YES_EMOJI)
+                voteMessage.react(NO_EMOJI)
+            })
     }
 
-    if (!application.checkForRulePhrase()) {
-        postRuleRejectButtons(application.uniqueIdentifier ,application.discordId, applicationTextChannel, application.applicationMessageId)
+    if (applicationNotificationChannel == null || !(applicationNotificationChannel instanceof TextChannel)) {
+        console.log(`${APPLICATION_NOTIFICATION_CHANNEL_ID} is not a valid text channel for application summary`)
+    } else {
+        // prepare notification summary
+        const basicApplicationEmbed = new MessageEmbed()
+            .setColor("#bdbc4b")
+            .setTitle("A new application has been sent")
+            .setDescription(applicationNotificationDescription)
+
+        await applicationNotificationChannel.send({embeds: [basicApplicationEmbed]})
     }
 
-    let mcUuid = await nameToUuid(application.uniqueIdentifier) ?? "unknown"
+    // specific for main application
+    if (application.questionSet == QUESTION_SET_APPLICATION && applicationChannel != null && applicationChannel instanceof TextChannel) {
+        // check if Mojang recognizes the username or if its spelt correctly
+        let usernameValid: Boolean = await usernameCheck(application.uniqueIdentifier, applicationChannel)
+        if (!usernameValid && !verifyUsernameInput(application.uniqueIdentifier)) {
+            await applicationChannel.send("This IGN doesnt look quite right. Reply to the application message with !(ign) if it is wrong")
+        }
 
-    // export application data to database
-    con.query(`INSERT INTO applicationhistory(dcUserId, messageId, messageTimestamp, messageURL, mcUsername, mcUuid, status) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [application.discordId, application.applicationMessageId, application.submittedTimestamp, application.applicationMessageUrl, application.uniqueIdentifier, mcUuid, "unknown"], (err: any) => {
+        if (!application.checkForRulePhrase()) {
+            postRuleRejectButtons(application.uniqueIdentifier, application.discordId, applicationTextChannel, application.applicationMessageId)
+        }
+
+        let mcUuid = await nameToUuid(application.uniqueIdentifier) ?? "unknown"
+
+        // export application data to database
+        con.query(`INSERT INTO applicationhistory(dcUserId, messageId, messageTimestamp, messageURL, mcUsername, mcUuid, status) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [application.discordId, application.applicationMessageId, application.submittedTimestamp, application.applicationMessageUrl, application.uniqueIdentifier, mcUuid, "unknown"], (err: any) => {
+                if (err) {
+                    console.error('Error inserting data:', err)
+                } else {
+                    console.log('Data inserted successfully')
+                }
+            })
+
+        await postApplicationHistory(applicationChannel, application.discordId, application.uniqueIdentifier)
+    }
+}
+
+export async function rebuildShopMessage() {
+    // rebuild the edited message
+    let mapsShopsChannel = client.channels.cache.get(APPLICATION_MAP_CHANNEL_ID)
+    if (!(mapsShopsChannel instanceof TextChannel)) return
+    let mapMessage = await mapsShopsChannel.messages.fetch(APPLICATION_SHOP_MESSAGE_ID)
+
+    con.query(
+        'SELECT `shopOwner`, `shopType`, `xCoord`, `zCoord` FROM `shop` ORDER BY `shopType` ASC',
+        function (err: Error | null, result: any[]) {
             if (err) {
-                console.error('Error inserting data:', err)
-            } else {
-                console.log('Data inserted successfully')
+                console.error(err)
+                return
             }
-        })
+            let concatenatedText = ''
 
-    await postApplicationHistory(applicationChannel, application.discordId, application.uniqueIdentifier)
-
-    let message = applicationChannel.messages.cache.get(application.applicationMessageId)
-    if (message instanceof DiscordJS.Message) await message.react("🇵")
+            // Iterate over each record in the result array
+            result.forEach((record) => {
+                // Format the information and concatenate to the result string
+                concatenatedText += `${record.shopType} (${record.shopOwner}) X:${record.xCoord}, Z:${record.zCoord}\n`
+            })
+            mapMessage.edit(`**__Shops:__**\n${concatenatedText}`)
+        }
+    )
 }
 
 export async function rebuildMapMessage() {
@@ -232,7 +286,7 @@ export async function rebuildMapMessage() {
     let mapMessage = await mapChannel.messages.fetch(APPLICATION_MAP_MESSAGE_ID)
 
     con.query(
-        'SELECT `text` FROM `map`',
+        'SELECT `text` FROM `map` ORDER BY `text` ASC',
         function (err: Error | null, result: any[]) {
             if (err) {
                 console.error(err)
@@ -242,7 +296,7 @@ export async function rebuildMapMessage() {
             const texts: string[] = result.map(row => row.text)
             const concatenatedText: string = texts.join('\n')
 
-            mapMessage.edit(concatenatedText)
+            mapMessage.edit(`**__Base locations:__**\n${concatenatedText}`)
         }
     )
 }
@@ -278,12 +332,12 @@ export async function postApplicationHistory(messageChannel: TextChannel, discor
     }
 }
 
-export function lookupApplicationByMessageSummaryId(messageId: string): InProgressApplication | undefined {
-    return activeApplications.find(item => item.applicationSummaryId === messageId)
-}
-
 export async function removeActiveApplication(applicationMessageId: string) {
     activeApplications = activeApplications.filter(application => application.applicationMessageId != applicationMessageId)
+}
+
+export async function removeActiveApplicationByUniqueIdentifier(uniqueIdentifier: string) {
+    activeApplications = activeApplications.filter(application => application.uniqueIdentifier != uniqueIdentifier)
 }
 
 export async function changeApplicationIGN(message: DiscordJS.Message) {
@@ -415,7 +469,7 @@ export function postRuleRejectButtons(mcusername: string, discordID: string, cha
                 .setLabel(`${RULE_PHRASE_EMOJI} ${capitalizeFirstLetter(RULE_PHRASE_TEXT)} rule reject AND KICK ${unescapeFormatting(mcusername)}`)
                 .setStyle('DANGER'),
         )
-    channel.send({ content:`${escapeFormatting(mcusername)} has been flagged as not having mentioned ${RULE_PHRASE_TEXT}. Click the button to ${RULE_PHRASE_TEXT} reject`, components: [ruleViolationButton, genericDeclineButton] })
+    channel.send({ content:`${escapeFormatting(mcusername)} has been flagged as not having mentioned ${RULE_PHRASE_TEXT}. Click the button to ${RULE_PHRASE_TEXT} reject.`, components: [ruleViolationButton, genericDeclineButton] })
 }
 
 export function postRegularRejectButtons(mcusername: string, discordID: string, channel: DiscordJS.TextBasedChannel, applicationMessageId: String) {
@@ -440,5 +494,36 @@ export function postRegularRejectButtons(mcusername: string, discordID: string, 
                 .setLabel(`👎 Generic reason reject and kick ${unescapeFormatting(mcusername)}`)
                 .setStyle('SECONDARY'),
         )
-    channel.send({ content:`${escapeFormatting(mcusername)} has received enough votes to be rejected. Click a button to reject`, components: [badApplicationButton, underAgeButton, genericButton] })
+    channel.send({
+        content: `${escapeFormatting(mcusername)} has received enough votes to be rejected. Click a button to reject.`,
+        components: [badApplicationButton, underAgeButton, genericButton]
+    })
+}
+
+export function postShopAcceptButton(uniqueIdentifier: string, applicant: string, channel: DiscordJS.TextBasedChannel) {
+    const shopAcceptButton = new MessageActionRow()
+        .addComponents(
+            new MessageButton()
+                .setCustomId(`shop,accept,${uniqueIdentifier}`)
+                .setLabel(`Accept shop request from ${escapeFormatting(applicant)}`)
+                .setStyle('PRIMARY'),
+        )
+    channel.send({
+        content: `${escapeFormatting(applicant)} has received enough votes to be accepted. Click the button to accept`,
+        components: [shopAcceptButton]
+    })
+}
+
+export function postShopRejectButton(uniqueIdentifier: string, applicant: string, channel: DiscordJS.TextBasedChannel) {
+    const shopRejectButton = new MessageActionRow()
+        .addComponents(
+            new MessageButton()
+                .setCustomId(`shop,reject,${uniqueIdentifier}`)
+                .setLabel(`Reject shop request from ${escapeFormatting(applicant)}`)
+                .setStyle('DANGER'),
+        )
+    channel.send({
+        content: `${escapeFormatting(applicant)} has received enough votes to be rejected. Click the button to reject. You must send the applicant a message yourself explaining why they were rejected and suggest a resolution.`,
+        components: [shopRejectButton]
+    })
 }

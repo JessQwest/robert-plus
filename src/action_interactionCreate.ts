@@ -2,10 +2,10 @@ import {
     ButtonInteraction,
     Client,
     GuildMember,
-    Interaction,
-    MessageEmbed,
+    Interaction, MessageActionRow,
+    MessageEmbed, Modal,
     RateLimitError, Role,
-    TextChannel
+    TextChannel, TextInputComponent
 } from "discord.js"
 import {escapeFormatting, getDiscordDisplayName, verifyUsernameInput} from "./utility"
 import * as DiscordJS from "discord.js"
@@ -25,8 +25,8 @@ import { v4 as uuidv4 } from 'uuid'
 import {nameToUuid} from "./api"
 import {
     applicationStatusDictionary,
-    rebuildMapMessage,
-    removeActiveApplication,
+    rebuildMapMessage, rebuildShopMessage,
+    removeActiveApplication, removeActiveApplicationByUniqueIdentifier,
     removeMapCoord
 } from "./zTopic_application_management"
 import {
@@ -34,14 +34,54 @@ import {
     buttonCancelApplication,
     buttonGotoNextQuestion,
     buttonGotoPreviousQuestion,
-    buttonPostApplication, buttonSkipQuestion,
-    createApplication, dmReceived, QUESTION_SET_APPLICATION, QUESTION_SET_MAP, QUESTION_SET_SHOP
+    buttonPostApplication,
+    buttonSkipQuestion,
+    createApplication,
+    lookupApplicationByUniqueIdentifier,
+    QUESTION_SET_APPLICATION,
+    QUESTION_SET_MAP,
+    QUESTION_SET_SHOP
 } from "./zTopic_application_creator"
 import {createRoleButton, manageUserRole} from "./zTopic_role_manager"
+const { ActionRowBuilder, Events, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js')
 
 export var buttonIDSet : Set<string> = new Set
 export async function interactionCreateButton(client: Client, i: Interaction) {
-    const { user, member, guild } = i
+    // modal submit is used for shop application edits
+    if (i.isModalSubmit()) {
+        console.log("Received modal submit")
+        const customId = i.customId
+        const application = lookupApplicationByUniqueIdentifier(customId)
+        if (application == null) return
+        let changes: string = ""
+
+        const oldOwner = application.answers[0]
+        const oldType = application.answers[1]
+        const oldXCoord = application.answers[2]
+        const oldZCoord = application.answers[3]
+
+        const shopOwnerInput = i.fields.getTextInputValue(`shopOwner`)
+        const shopTypeInput = i.fields.getTextInputValue(`shopType`)
+        const shopXCoordInput = i.fields.getTextInputValue(`xCoord`)
+        const shopZCoordInput = i.fields.getTextInputValue(`zCoord`)
+        if (oldOwner != shopOwnerInput) {
+            application.answers[0] = shopOwnerInput
+            changes += `Shop owner changed from '${oldOwner}' to '${shopOwnerInput}'\n`
+        }
+        if (oldType != shopTypeInput) {
+            application.answers[1] = shopTypeInput
+            changes += `Shop type changed from '${oldType}' to '${shopTypeInput}'\n`
+        }
+        if (oldXCoord != shopXCoordInput) {
+            application.answers[2] = shopXCoordInput
+            changes += `X coordinate changed from '${oldXCoord}' to '${shopXCoordInput}'\n`
+        }
+        if (oldZCoord != shopZCoordInput) {
+            application.answers[3] = shopZCoordInput
+            changes += `Z coordinate changed from '${oldZCoord}' to '${shopZCoordInput}'\n`
+        }
+        await i.reply({ content: `Edited by ${i.user.username}\n${changes}` })
+    }
 
     //checking for valid
     if (!i.isButton()) {
@@ -130,6 +170,59 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
         return
     }
 
+    if (splitCustomId[0] === "shop" && splitCustomId[1] === "edit") {
+        // get the applicant for that specific application
+        const application = lookupApplicationByUniqueIdentifier(splitCustomId[2])
+        if (application == null) return
+        const applicantId = application.discordId
+        const applicant = await client.users.fetch(applicantId)
+        if (applicant == null) return
+
+        // Create the modal
+        const modal = new Modal()
+            .setCustomId(splitCustomId[2])
+            .setTitle(`Edit application: ${application.answers[0]}`)
+        // Add components to modal
+        // Create the text input components
+        const shopOwnerInput = new TextInputComponent()
+            .setCustomId('shopOwner')
+            .setLabel("List of shop owner IGNs")
+            .setValue(application.answers[0])
+            .setStyle('SHORT')
+        const shopTypeInput = new TextInputComponent()
+            .setCustomId('shopType')
+            .setLabel("Shop Type")
+            .setValue(application.answers[1])
+            .setStyle('SHORT')
+        const xCoordInput = new TextInputComponent()
+            .setCustomId('xCoord')
+            .setLabel("X coordinate")
+            .setValue(application.answers[2])
+            .setStyle('SHORT')
+        const zCoordInput = new TextInputComponent()
+            .setCustomId('zCoord')
+            .setLabel("Z coordinate")
+            .setValue(application.answers[3])
+            .setStyle('SHORT')
+        // An action row only holds one text input,
+        // so you need one action row per text input.
+        // @ts-ignore
+        const actionRow1 = new MessageActionRow().addComponents(shopOwnerInput)
+        // @ts-ignore
+        const actionRow2 = new MessageActionRow().addComponents(shopTypeInput)
+        // @ts-ignore
+        const actionRow3 = new MessageActionRow().addComponents(xCoordInput)
+        // @ts-ignore
+        const actionRow4 = new MessageActionRow().addComponents(zCoordInput)
+        // @ts-ignore
+        modal.addComponents(actionRow1, actionRow2, actionRow3, actionRow4)
+        // Show the modal to the user
+        await i.showModal(modal)
+        return
+    }
+
+    // buttons past this point are single use and can only be interacted with one
+
     // check for button clash
     if (!buttonIDSet.has(b.message.id)) {
         buttonIDSet.add(b.message.id)
@@ -144,6 +237,44 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
         return
     }
 
+    // check if button is for a shop
+    if (splitCustomId[0] === "shop") {
+        // get the applicant for that specific application
+        const application = lookupApplicationByUniqueIdentifier(splitCustomId[2])
+        if (application == null) return
+        const applicantId = application.discordId
+        const applicant = await client.users.fetch(applicantId)
+        if (applicant == null) return
+
+        if (splitCustomId[1] === "accept") {
+            await removeActiveApplicationByUniqueIdentifier(splitCustomId[2])
+
+            con.query('INSERT INTO shop (shopOwner, shopType, xCoord, zCoord) VALUES (?,?,?,?)', [application.answers[0], application.answers[1], application.answers[2], application.answers[3]] , function (err: any, result: any, fields: any) {
+                if (err) {
+                    const errorMessage = `${NO_EMOJI} SQL Error 2, Jess needs to look into this (jx0050)`
+                    i.channel?.send(errorMessage)
+                    console.error(`${errorMessage}: ${err}`)
+                }
+                i.channel?.send(`The shop request has been accepted`)
+                i.update({ content: `The shop request for ${application.answers[0]} was accepted by ${b.user.username}`, components: [] })
+            })
+
+            await applicant.send(`Your shop application has been accepted.`)
+            console.warn("asd")
+            await rebuildShopMessage()
+            console.warn("zxc")
+        } else if (splitCustomId[1] === "reject") {
+            await removeActiveApplicationByUniqueIdentifier(splitCustomId[2])
+            await applicant.send(`Your shop application has been rejected.`)
+            i.update({ content: `The shop request for ${application.answers[0]} was rejected by ${b.user.username}`, components: [] })
+        }
+        else {
+            console.error(`Invalid shop button custom id ${splitCustomId[1]}: (jx0049)`)
+        }
+        return
+    }
+
+    // must be a button for an application
     if (splitCustomId.length < 2) {
         console.log(`Invalid custom id input (jx0016)`)
     }

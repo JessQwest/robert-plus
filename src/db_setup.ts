@@ -25,4 +25,9 @@ export function setupDatabaseTables() {
         if (err) throw err
         console.log(`map table created if not exists`)
     })
+
+    con.query('CREATE TABLE IF NOT EXISTS `shop` (`shopId` INT AUTO_INCREMENT, `shopOwner` VARCHAR(30) NOT NULL, `shopType` VARCHAR(200) NOT NULL, `xCoord` VARCHAR(10) NOT NULL, `zCoord` VARCHAR(10) NOT NULL, `stockLevel` VARCHAR(30), PRIMARY KEY (`shopId`))', function (err: any, result: any, fields: any) {
+        if (err) throw err
+        console.log(`shop table created if not exists`)
+    })
 }

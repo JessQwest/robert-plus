@@ -2,6 +2,7 @@ import * as DiscordJS from "discord.js"
 import {Client, MessageReaction, PartialMessageReaction} from 'discord.js'
 import {MessageActionRow, MessageButton} from "discord.js"
 import {
+    APPLICATION_MAJORITY_REQUIRED, APPLICATION_SHOP_MAJORITY_REQUIRED,
     NO_EMOJI_ID,
     REDSTONE_EMOJI,
     REDSTONE_EMOJI_ID, RULE_PHRASE_EMOJI,
@@ -12,10 +13,14 @@ import {
 import {unescapeFormatting} from "./utility"
 import {
     InProgressApplication,
-    lookupApplicationByMessageSummaryId,
     postRegularRejectButtons,
-    postRuleRejectButtons
+    postRuleRejectButtons, postShopAcceptButton, postShopRejectButton
 } from "./zTopic_application_management"
+import {
+    lookupApplicationByMessageSummaryId,
+    QUESTION_SET_APPLICATION,
+    QUESTION_SET_SHOP
+} from "./zTopic_application_creator"
 
 export async function messageReactionAdd(client: Client, reaction: MessageReaction | PartialMessageReaction) {
     console.log(`messageReactionAdd triggered`)
@@ -49,6 +54,14 @@ export async function messageReactionAdd(client: Client, reaction: MessageReacti
         return
     }
 
+    const questionSet = userApplication.questionSet
+    let votesRequired: number = 1
+    if (questionSet == QUESTION_SET_APPLICATION) {
+        votesRequired = APPLICATION_MAJORITY_REQUIRED ? staffReactThreshold : 1
+    } else if (questionSet == QUESTION_SET_SHOP) {
+        votesRequired = APPLICATION_SHOP_MAJORITY_REQUIRED ? staffReactThreshold : 1
+    }
+
     //yes votes
     if (reaction.emoji.id == YES_EMOJI_ID) {
         const yesVotes = reactionCache.get(YES_EMOJI_ID)
@@ -57,23 +70,27 @@ export async function messageReactionAdd(client: Client, reaction: MessageReacti
             return
         }
 
-        console.log(`accept react for application count ${yesVotes.count - 1} of ${staffReactThreshold - 1}`)
+        console.log(`accept react for application count ${yesVotes.count - 1} of ${staffReactThreshold}`)
 
-        if (yesVotes.count >= staffReactThreshold) {
-            console.log(`${yesVotes.count} exceeds threshold of ${staffReactThreshold}, posting new accept button`)
+        if (yesVotes.count >= votesRequired + 1) {
+            console.log(`${yesVotes.count - 1} exceeds threshold of ${staffReactThreshold}, posting new accept button`)
 
-            const acceptButton = new MessageActionRow()
-                .addComponents(
-                    new MessageButton()
-                        .setCustomId(`${unescapeFormatting(mcUsername)},${discordID},accept,${applicationMessageID}`)
-                        .setLabel(`Accept ${unescapeFormatting(mcUsername)}`)
-                        .setStyle('PRIMARY'),
-                )
+            if (questionSet == QUESTION_SET_APPLICATION) {
+                const acceptButton = new MessageActionRow()
+                    .addComponents(
+                        new MessageButton()
+                            .setCustomId(`${unescapeFormatting(mcUsername)},${discordID},accept,${applicationMessageID}`)
+                            .setLabel(`Accept ${unescapeFormatting(mcUsername)}`)
+                            .setStyle('PRIMARY'),
+                    )
+                await reaction.message.channel.send({
+                    content: `${mcUsername} has received enough votes to be accepted. Click the button to accept`,
+                    components: [acceptButton]
+                })
+            } else if (questionSet == QUESTION_SET_SHOP) {
+                postShopAcceptButton(userApplication.uniqueIdentifier, userApplication.answers[0], reaction.message.channel)
+            }
             await reaction.message.react(REDSTONE_EMOJI)
-            await reaction.message.channel.send({
-                content: `${mcUsername} has received enough votes to be accepted. Click the button to accept`,
-                components: [acceptButton]
-            })
         }
     }
     //votes for no
@@ -84,12 +101,16 @@ export async function messageReactionAdd(client: Client, reaction: MessageReacti
             return
         }
 
-        console.log(`deny react for application count ${noVotes.count - 1} of ${staffReactThreshold - 1}`)
+        console.log(`deny react for application count ${noVotes.count - 1} of ${staffReactThreshold}`)
 
-        if (noVotes.count >= staffReactThreshold) {
-            console.log(`${noVotes.count} exceeds threshold of ${staffReactThreshold}, posting new decline button`)
+        if (noVotes.count >= votesRequired + 1) {
+            console.log(`${noVotes.count - 1} exceeds threshold of ${staffReactThreshold}, posting new decline button`)
 
-            postRegularRejectButtons(unescapeFormatting(mcUsername), discordID, reaction.message.channel, applicationMessageID)
+            if (questionSet == QUESTION_SET_APPLICATION) {
+                postRegularRejectButtons(unescapeFormatting(mcUsername), discordID, reaction.message.channel, applicationMessageID)
+            } else if (questionSet == QUESTION_SET_SHOP) {
+                postShopRejectButton(userApplication.uniqueIdentifier, userApplication.answers[0], reaction.message.channel)
+            }
             await reaction.message.react(REDSTONE_EMOJI)
         }
     } else if (reaction.emoji.toString() == RULE_PHRASE_EMOJI) {

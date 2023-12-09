@@ -54,29 +54,32 @@ export const MAIN_ANNOUNCEMENT_CHANNEL = DEBUGMODE ? DEBUG_CHANNEL_ID : config.g
 export const BIRTHDAY_MESSAGE_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : config.get('features.birthday-message-channel-id') // for posting birthday messages
 
 export const IS_APPLICATION_ENABLED = config.get('application.server-application.enabled')
+export const APPLICATION_MAJORITY_REQUIRED: boolean = config.get('application.server-application.require-majority-vote')
 export const APPLICATION_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : config.get('application.server-application.full-post-channel') // channel where applications are posted
 export const APPLICATION_VOTING_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : config.get('application.server-application.summary-post-channel') // channel where applications summaries are posted and voted on
 export const APPLICATION_NOTIFICATION_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : config.get('application.server-application.notification-post-channel') // channel with basic notifications
 
 
 export const IS_SHOP_APPLICATION_ENABLED = config.get('application.shop-application.enabled')
-export const APPLICATION_SHOP_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : config.get('application.shop-application.full-post-channel') // channel where shop applications are posted
+export const APPLICATION_SHOP_MAJORITY_REQUIRED: boolean = config.get('application.shop-application.require-majority-vote')
+export const APPLICATION_SHOP_CHANNEL_ID = DEBUGMODE ? "0" : config.get('application.shop-application.full-post-channel') // channel where shop applications are posted
 export const APPLICATION_SHOP_VOTING_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : config.get('application.shop-application.summary-post-channel') // channel where shop applications summaries are posted and voted on
-export const APPLICATION_SHOP_NOTIFICATION_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : config.get('application.shop-application.notification-post-channel') // channel with basic notifications for shop applications
+export const APPLICATION_SHOP_NOTIFICATION_CHANNEL_ID = DEBUGMODE ? "0" : config.get('application.shop-application.notification-post-channel') // channel with basic notifications for shop applications
 
 
 export const IS_MAP_APPLICATION_ENABLED = config.get('application.map-coordinate.enabled')
 export const APPLICATION_MAP_FORM_CHANNEL_ID = DEBUGMODE ? config.get('debug-mode.map-form-post-channel-id') : config.get('application.map-coordinate.map-form-post-channel-id') // channel where the map message form is posted
 export const APPLICATION_MAP_CHANNEL_ID = DEBUGMODE ? config.get('debug-mode.map-channel-id') : config.get('application.map-coordinate.map-channel-id') // channel where the map message is
 export const APPLICATION_MAP_MESSAGE_ID = DEBUGMODE ? config.get('debug-mode.map-message-id') : config.get('application.map-coordinate.map-message-id') // message id of the map message
+export const APPLICATION_SHOP_MESSAGE_ID = DEBUGMODE ? config.get('debug-mode.shop-message-id') : config.get('application.shop-application.shop-list-message-id') // message id of the list of shops
 
 // server constants
 export const APPLICATION_SERVER_ID = DEBUGMODE ? config.get('debug-mode.debug-server-id') : config.get('application.application-server-id')
 export const MAIN_SERVER_ID = config.get('server-info.server-id')
 
 // other constants
-export const staffReactThreshold = DEBUGMODE ? 2 : config.get('application.application-vote-threshold') + 1
-export const APPLICATION_VOTE_REMINDER_THRESHOLD_HOURS = DEBUGMODE ? 0.05 : config.get('application.application-reminder-interval') // how often, in hours, should the bot remind people to vote on applications
+export const staffReactThreshold: number = DEBUGMODE ? 1 : config.get('application.application-vote-threshold')
+export const APPLICATION_VOTE_REMINDER_THRESHOLD_HOURS = DEBUGMODE ? 0.005 : config.get('application.application-reminder-interval') // how often, in hours, should the bot remind people to vote on applications
 export const APPLICATION_MAX_REMIND_TIMES = config.get('application.application-reminder-times') // how many times should the bot remind people to vote on applications. a give up message will be sent after this
 export const APPLICATION_VOTER_ROLE_ID = DEBUGMODE ? "975908077884809276" : "743617410069692437" // people with this role that have not voted will be pinged to vote
 export const ROBERT_USER_ID = config.get('other-ids.robert-plus-id')

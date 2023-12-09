@@ -12,6 +12,7 @@ import {
 import {TextChannel} from "discord.js"
 import {activeApplications} from "./zTopic_application_management"
 import {escapeFormatting} from "./utility"
+import {QUESTION_SET_APPLICATION, QUESTION_SET_SHOP} from "./zTopic_application_creator"
 
 var Jessica: string = "252818596777033729"
 var schrute: string = "699331874408890378"
@@ -87,7 +88,21 @@ async function postApplicationVotingReminder() {
             else if (application.remindedCount == APPLICATION_MAX_REMIND_TIMES) {
                 voteReminderString = `FINAL REMINDER: `
             }
-            voteReminderString += `Voting for ${escapeFormatting(application.uniqueIdentifier)} is still open! [Application Link](${application.applicationMessageUrl}) | [Voting Link](${application.applicationSummaryUrl})${unvotedMembersString}`
+
+            // build links for voting
+            let isApplicationLink: boolean = application.applicationMessageUrl != ""
+            let isVotingLink: boolean = application.applicationSummaryUrl != ""
+            let votingLinkString = ""
+            if (isApplicationLink) votingLinkString += `[Application Link](${application.applicationMessageUrl})`
+            if (isApplicationLink && isVotingLink) votingLinkString += " | "
+            if (isVotingLink) votingLinkString += `[Voting Link](${application.applicationSummaryUrl})`
+
+            // get name for voting
+            let name: string = ""
+            if (application.questionSet == QUESTION_SET_APPLICATION) name = application.uniqueIdentifier
+            else if (application.questionSet == QUESTION_SET_SHOP) name = application.answers[0]
+
+            voteReminderString += `Voting for ${escapeFormatting(name)} is still open! ${votingLinkString}${unvotedMembersString}`
             await applicationVotingChannel.send(voteReminderString)
 
             application.lastNotificationDatetime = new Date()
