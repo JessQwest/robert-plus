@@ -260,9 +260,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
             })
 
             await applicant.send(`Your shop application has been accepted.`)
-            console.warn("asd")
             await rebuildShopMessage()
-            console.warn("zxc")
         } else if (splitCustomId[1] === "reject") {
             await removeActiveApplicationByUniqueIdentifier(splitCustomId[2])
             await applicant.send(`Your shop application has been rejected.`)

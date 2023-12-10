@@ -505,7 +505,7 @@ export function postShopAcceptButton(uniqueIdentifier: string, applicant: string
         .addComponents(
             new MessageButton()
                 .setCustomId(`shop,accept,${uniqueIdentifier}`)
-                .setLabel(`Accept shop request from ${escapeFormatting(applicant)}`)
+                .setLabel(`Accept shop request from ${unescapeFormatting(applicant)}`)
                 .setStyle('PRIMARY'),
         )
     channel.send({
@@ -519,7 +519,7 @@ export function postShopRejectButton(uniqueIdentifier: string, applicant: string
         .addComponents(
             new MessageButton()
                 .setCustomId(`shop,reject,${uniqueIdentifier}`)
-                .setLabel(`Reject shop request from ${escapeFormatting(applicant)}`)
+                .setLabel(`Reject shop request from ${unescapeFormatting(applicant)}`)
                 .setStyle('DANGER'),
         )
     channel.send({

@@ -18,6 +18,7 @@ export const REQ_IGN = "IGN"
 export const REQ_POS_NUMBER = "NUMBER"
 export const REQ_ANY_NUMBER = "ANY_NUMBER"
 export const REQ_TEXT = "TEXT"
+export const REQ_TINY_TEXT = "TINY_TEXT"
 export const REQ_OPTIONAL_TEXT = "OPTIONAL_TEXT"
 export const REQ_AGREE = "AGREE"
 
@@ -47,8 +48,8 @@ export const applicationquestions = [
 ]
 
 export const shopquestions = [
-    ["What is your IGN? If multiple people will share the shop, enter all names.", REQ_TEXT, VISIBILITY_ALL, "Shop owners"],
-    ["What do you wish to sell?", REQ_TEXT, VISIBILITY_ALL, "Shop type"],
+    ["What is your IGN? If multiple people will share the shop, enter all names.", REQ_TINY_TEXT, VISIBILITY_ALL, "Shop owners"],
+    ["What do you wish to sell?", REQ_TINY_TEXT, VISIBILITY_ALL, "Shop type"],
     ["What is your shop X coordinate?", REQ_ANY_NUMBER, VISIBILITY_ALL, "X"],
     ["What is your shop Z coordinate?", REQ_ANY_NUMBER, VISIBILITY_ALL, "Z"],
     ["I have read and I agree to the shop rules. I understand that if my shop is unstocked for a week I will get a 7 day notice to stock it via Discord, after which, without exceptional circumstances, the shop will be destroyed without notice.", REQ_AGREE, VISIBILITY_NONE, "Agree"]
@@ -58,8 +59,6 @@ export const mapquestions = [
     ["What is your base X coordinate?", REQ_ANY_NUMBER, VISIBILITY_ALL, "X"],
     ["What is your base Z coordinate?", REQ_ANY_NUMBER, VISIBILITY_ALL, "Z"],
 ]
-
-// todo specify in config file the output main channel, output notification channel
 
 export function getQuestions(questionSet: string) {
     if (questionSet === QUESTION_SET_APPLICATION) return applicationquestions
@@ -72,6 +71,7 @@ const inputTypes = [
     [REQ_IGN, "your IGN, which is composed of letters, numbers, and underscores"],
     [REQ_POS_NUMBER, "a number"],
     [REQ_ANY_NUMBER, "a number"],
+    [REQ_TINY_TEXT, "a little bit of text (less than 50 characters)"],
     [REQ_TEXT, "some text (less than 800 characters)"],
     [REQ_OPTIONAL_TEXT, "some text or click the button to skip"],
     [REQ_OPTIONAL_TEXT, "'I agree' or click the button"],
@@ -210,7 +210,11 @@ async function validateAnswer(text: string, rule: String): Promise<number> {
         return 0
     }
     else if (rule === REQ_TEXT || rule === REQ_OPTIONAL_TEXT) {
-        if (text.length < 800) return 1
+        if (text.length <= 800) return 1
+        return 0
+    }
+    else if (rule === REQ_TINY_TEXT) {
+        if (text.length <= 50) return 1
         return 0
     }
     else if (rule === REQ_AGREE) {
