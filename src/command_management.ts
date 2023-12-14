@@ -3,7 +3,7 @@ import {client} from "./index"
 
 export function registerCommands() {
 
-    const testGuildID = '706923004285812849'
+    const testGuildID = '772844397020184576'
     const testGuild = client.guilds.cache.get(testGuildID)
 
     let commands
@@ -185,6 +185,17 @@ export function registerCommands() {
         options: [{
             name: "mcusername",
             description: "The MC username that is to be kicked",
+            required: true,
+            type: DiscordJS.Constants.ApplicationCommandOptionTypes.STRING
+        }]
+    })
+
+    commands?.create({
+        name: 'editshop',
+        description: "Edit a shop",
+        options: [{
+            name: "description",
+            description: "The shop type or owner",
             required: true,
             type: DiscordJS.Constants.ApplicationCommandOptionTypes.STRING
         }]

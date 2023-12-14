@@ -168,11 +168,11 @@ export async function processNewApplication(application: InProgressApplication) 
 
         const rulePhraseDetectedString: string = application.checkForRulePhrase() ? "Yes" : "No"
 
-        applicationReviewDescription = `Discord Name: ${application.discordUsername}\n${applicationReviewDescription}${capitalizeFirstLetter(RULE_PHRASE_TEXT)}s Detected: ${rulePhraseDetectedString}\nApplication Size: ${applicationLengthDescription}`
-        applicationNotificationDescription = `Discord Name: ${application.discordUsername}\n${applicationNotificationDescription}${capitalizeFirstLetter(RULE_PHRASE_TEXT)}s Detected: ${rulePhraseDetectedString}`
+        applicationReviewDescription = `Discord Name: ${escapeFormatting(application.discordUsername)}\n${applicationReviewDescription}${capitalizeFirstLetter(RULE_PHRASE_TEXT)}s Detected: ${rulePhraseDetectedString}\nApplication Size: ${applicationLengthDescription}`
+        applicationNotificationDescription = `Discord Name: ${escapeFormatting(application.discordUsername)}\n${applicationNotificationDescription}${capitalizeFirstLetter(RULE_PHRASE_TEXT)}s Detected: ${rulePhraseDetectedString}`
     } else if (application.questionSet == QUESTION_SET_SHOP) {
-        applicationReviewDescription = `Discord Name: ${application.discordUsername}\n${applicationReviewDescription}`
-        applicationNotificationDescription = `Discord Name: ${application.discordUsername}\n${applicationNotificationDescription}`
+        applicationReviewDescription = `Discord Name: ${escapeFormatting(application.discordUsername)}\n${applicationReviewDescription}`
+        applicationNotificationDescription = `Discord Name: ${escapeFormatting(application.discordUsername)}\n${applicationNotificationDescription}`
     }
 
     const applicationEmbedToPost = new MessageEmbed()
@@ -188,7 +188,7 @@ export async function processNewApplication(application: InProgressApplication) 
         const messageActionRow = new MessageActionRow()
 
         const dismissButton = new MessageButton()
-            .setCustomId(`application,dismiss`)
+            .setCustomId(`application,dismiss,${application.uniqueIdentifier}`)
             .setLabel(`Dismiss application`)
             .setStyle('DANGER')
         messageActionRow.addComponents(dismissButton)
@@ -196,7 +196,7 @@ export async function processNewApplication(application: InProgressApplication) 
         // if application is for a shop, add an edit button
         if (application.questionSet == QUESTION_SET_SHOP) {
             const editButton = new MessageButton()
-                .setCustomId(`shop,edit,${application.uniqueIdentifier}`)
+                .setCustomId(`shop,editbyuuid,${application.uniqueIdentifier}`)
                 .setLabel(`Edit answers`)
                 .setStyle('SECONDARY')
             messageActionRow.addComponents(editButton)
@@ -221,7 +221,7 @@ export async function processNewApplication(application: InProgressApplication) 
         const basicApplicationEmbed = new MessageEmbed()
             .setColor("#bdbc4b")
             .setTitle("A new application has been sent")
-            .setDescription(applicationNotificationDescription)
+            .setDescription(escapeFormatting(applicationNotificationDescription))
 
         await applicationNotificationChannel.send({embeds: [basicApplicationEmbed]})
     }

@@ -4,11 +4,6 @@ import {client} from "./index"
 let lastTits = 0
 
 export async function easter_egg_messageCreate(message: DiscordJS.Message) {
-    // if anyone says jacquestheminer
-    if (message.content.toLowerCase().includes("jacquestheminer")) {
-        await message.react("🍷")
-    }
-
     // if azure sends a long message
     if (message.content.length > 500 && message.author.id == "402216790798630915") {
         let randomInt = Math.floor(Math.random() * 3)

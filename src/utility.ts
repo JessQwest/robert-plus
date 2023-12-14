@@ -1,7 +1,7 @@
 import {RULE_MATCH_STRINGS, RULE_PHRASE_TEXT} from "./index"
 import * as DiscordJS from "discord.js"
 
-export function escapeFormatting(input: string) {
+export function escapeFormatting(input: string): string {
     if (input.includes("\\")) {
         console.log("The string seems to already be escaped (jx0028)")
         return input
@@ -69,4 +69,15 @@ export function countCharacterChanges(str1: string, str2: string): number {
     }
 
     return changes
+}
+
+// used as a metric for how similar two strings are, higher score means more similar
+export function jaccardIndex(str1: string, str2: string): number {
+    const set1 = new Set(str1.toLowerCase())
+    const set2 = new Set(str2.toLowerCase())
+
+    const intersectionSize = [...set1].filter(char => set2.has(char)).length
+    const unionSize = set1.size + set2.size - intersectionSize
+
+    return intersectionSize / unionSize
 }

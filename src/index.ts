@@ -1,3 +1,6 @@
+import {interactionCreateCommand} from "./action_interactionCreateCommand"
+import {interactionCreateModal} from "./action_interactionCreateModal"
+import {interactionCreateButton} from "./action_interactionCreateButton"
 var cron = require('node-cron')
 const config = require("config")
 import * as DiscordJS from 'discord.js'
@@ -6,26 +9,21 @@ import * as dotenv from 'dotenv'
 import { v4 as uuidv4 } from 'uuid'
 import {TextBasedChannel} from "discord.js"
 dotenv.config()
-var mysql = require('mysql')
+const mysql = require('mysql')
 
 import * as db_setup from './db_setup'
 import * as scheduled_jobs from './scheduled_jobs'
 import * as command_management from './command_management'
 import {messageReactionAdd} from "./action_messageReactionAdd"
 import {guildMemberRemove} from "./action_guildMemberRemove"
-import {
-    interactionCreateButton,
-    interactionCreateCommand
-} from "./action_interactionCreate"
 import {guildMemberUpdate} from "./action_guildMemberUpdate"
 import {messageCreate} from "./action_messageCreate"
 import {messageDelete} from "./action_messageDelete"
 
+
 export var DEBUGMODE = config.get('debug-mode.enabled')
 
-if (DEBUGMODE) {
-    console.log("Running with debugmode.")
-}
+console.log(`Running with debug mode set to ${DEBUGMODE}`)
 
 // text constants
 export const SERVER_NAME = config.get('server-info.server-name')
@@ -161,6 +159,10 @@ client.on('interactionCreate', async i => {
 
 client.on('interactionCreate', async i => {
     await interactionCreateCommand(client, i)
+})
+
+client.on('interactionCreate', async i => {
+    await interactionCreateModal(client, i)
 })
 
 client.on('messageDelete', async (message) => {

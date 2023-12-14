@@ -1,6 +1,5 @@
 import {client, con, DEBUG_CHANNEL_ID, SERVER_NAME} from "./index"
 import {containsRulePhrase, getDiscordDisplayName, unescapeFormatting, verifyUsernameInput} from "./utility"
-import {buttonIDSet} from "./action_interactionCreate"
 import {MessageEmbed, TextChannel} from "discord.js"
 import * as DiscordJS from "discord.js"
 import {
@@ -9,7 +8,8 @@ import {
     postApplicationHistory,
 } from "./zTopic_application_management"
 import {dailyHousekeepTask} from "./scheduled_jobs"
-import {buttonPostApplication} from "./zTopic_application_creator";
+import {buttonPostApplication} from "./zTopic_application_creator"
+import {buttonIDSet} from "./action_interactionCreateButton"
 
 export async function debug_messageCreate(message: DiscordJS.Message) {
     //test function

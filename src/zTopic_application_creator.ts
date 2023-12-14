@@ -1,5 +1,5 @@
 import * as DiscordJS from "discord.js"
-import {containsRulePhrase, unescapeFormatting, verifyUsernameInput} from "./utility"
+import {containsRulePhrase, escapeFormatting, unescapeFormatting, verifyUsernameInput} from "./utility"
 import {MessageActionRow, MessageButton, MessageEmbed, TextChannel} from "discord.js"
 import {
     APPLICATION_CHANNEL_ID, APPLICATION_MAP_CHANNEL_ID, APPLICATION_MAP_FORM_CHANNEL_ID, APPLICATION_MAP_MESSAGE_ID,
@@ -11,7 +11,7 @@ import {
     SERVER_NAME
 } from "./index"
 import {usernameCheck} from "./api"
-import {activeApplications, InProgressApplication, processNewApplication} from "./zTopic_application_management";
+import {activeApplications, InProgressApplication, processNewApplication} from "./zTopic_application_management"
 
 
 export const REQ_IGN = "IGN"
@@ -128,7 +128,7 @@ export async function createApplication(user: DiscordJS.User, questionSet: strin
 
             if (questionSet == QUESTION_SET_APPLICATION) {
                 let notificationEmbed = new MessageEmbed()
-                    .setTitle(`${user.username} has started an application!`)
+                    .setTitle(`${escapeFormatting(user.username)} has started an application!`)
                     .setColor(`#f45858`)
                 notificationChannel.send({embeds: [notificationEmbed]})
             }
