@@ -135,14 +135,14 @@ async function removeApplicationMembers() {
                 if (await mainGuild.members.cache.get(member.id)) {
                     console.log(`${member.user.username} is in the main guild`)
                     otherUser = await mainGuild.members.fetch(member.id)
-                    if (member.roles.cache.size <= 1 && daysJoined >= 30) kickReason = `${escapeFormatting(member.user.username)} joined ${daysJoined} Days ago and is being kicked for inactivity.`
-                    else if (member.roles.cache.size <= 1 && daysJoined >= 3 && otherUser) kickReason = `${escapeFormatting(member.user.username)} joined ${daysJoined} Days ago and is being kicked as they are in the main server.`
-
-                    if (kickReason != "") {
-                        console.log(`${member.user.username} has ${member.roles.cache.size} roles: ${JSON.stringify(member.roles.cache)}`)
-                        await sendApplicationNotification(kickReason)
-                        member.kick(kickReason)
-                    }
+                }
+                if (member.roles.cache.size <= 1 && daysJoined >= 30) kickReason = `${escapeFormatting(member.user.username)} joined ${daysJoined} days ago and is being kicked for inactivity.`
+                else if (member.roles.cache.size <= 1 && daysJoined >= 3 && otherUser != null) kickReason = `${escapeFormatting(member.user.username)} joined ${daysJoined} days ago and is being kicked as they are in the main server.`
+                console.log(kickReason)
+                if (kickReason != "") {
+                    console.log(`Kicking ${member.user.username}. Days joined: ${daysJoined} kick reason: ${kickReason}`)
+                    await sendApplicationNotification(kickReason)
+                    member.kick(kickReason)
                 }
             }
         }

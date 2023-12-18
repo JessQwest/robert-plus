@@ -259,11 +259,11 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
                 i.update({ content: `The shop request for ${application.answers[0]} was accepted by ${b.user.username}`, components: [] })
             })
 
-            await applicant.send(`Your shop application has been accepted.`)
+            await applicant.send(`Your shop application has been accepted. 🎉`)
             await rebuildShopMessage()
         } else if (splitCustomId[1] === "reject") {
             await removeActiveApplicationByUniqueIdentifier(splitCustomId[2])
-            await applicant.send(`Your shop application has been rejected.`)
+            await applicant.send(`Your shop application has been rejected. 🙁`)
             i.update({ content: `The shop request for ${application.answers[0]} was rejected by ${b.user.username}`, components: [] })
         }
         else {
