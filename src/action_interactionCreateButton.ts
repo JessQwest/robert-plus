@@ -276,6 +276,66 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
         return
     }
 
+    if (splitCustomId[0] === "shop" && splitCustomId[1] === "deletebyid") {
+        if (!(i.component instanceof MessageButton)) return
+        if (splitCustomId.length >= 4 && splitCustomId[3] == "confirm") {
+            // if this is a confirmation button
+            // find the shop information to delete
+            let currentShopOwner: string
+            let currentShopType: string
+            con.query(`SELECT * FROM shop where shopId = ?`, [splitCustomId[2]], function (err: any, result: any, fields: any) {
+                if (err) {
+                    const errMsg = `${NO_EMOJI} SQL Error, Jess needs to look into this (jx0051)`
+                    console.error(errMsg, err)
+                    return
+                }
+                if (result.length > 0) {
+                    const {
+                        shopId,
+                        shopOwner,
+                        shopType,
+                        xCoord,
+                        zCoord,
+                    } = result[0]
+                    currentShopOwner = shopOwner
+                    currentShopType = shopType
+                }
+            })
+            // then delete it
+            con.query(`DELETE FROM shop WHERE shopId = ?`, [splitCustomId[2]], function (err: any, result: any, fields: any) {
+                if (err) {
+                    const errMsg = `${NO_EMOJI} SQL Error, Jess needs to look into this (jx0063)`
+                    console.error(errMsg, err)
+                    return
+                }
+                if (result.affectedRows > 0) {
+                    console.log(`Deleted shop with id ${splitCustomId[2]}`)
+                    i.channel?.send({content: `Deleted shop: ${currentShopType} - ${currentShopOwner}`})
+                    rebuildShopMessage()
+                } else {
+                    console.log('No rows found.')
+                    i.reply({content: `Could not find the shop, it might have already been deleted.`, ephemeral: true})
+                }
+            })
+        } else {
+            // if not a confirmation button, post one if such a record exists
+            con.query(`SELECT * FROM shop where shopId = ?`, [splitCustomId[2]], function (err: any, result: any, fields: any) {
+                if (err) {
+                    const errMsg = `${NO_EMOJI} SQL Error, Jess needs to look into this (jx0051)`
+                    console.error(errMsg, err)
+                    return
+                }
+                if (result.length > 0) {
+                    i.reply({content: `This shop does not appear to exist!`, ephemeral: true})
+                    return
+                }
+            })
+            const reply = await getConfirmationButton(i.component)
+            i.reply(reply)
+        }
+        return
+    }
+
     // buttons past this point are single use and can only be interacted with one
 
     // check for button clash
