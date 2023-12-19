@@ -227,7 +227,8 @@ export async function interactionCreateCommand(client: Client, i: Interaction) {
                 return scoreB - scoreA
             })
 
-            const messageActionRow = new MessageActionRow()
+            const editMessageActionRow = new MessageActionRow()
+            const deleteMessageActionRow = new MessageActionRow()
 
             const MAX_SEARCH_COUNT: number = 3 // edit this to change the max number of returned results
             const rowsToPrint = sortedResults.slice(0, MAX_SEARCH_COUNT)
@@ -235,14 +236,20 @@ export async function interactionCreateCommand(client: Client, i: Interaction) {
             for (let i = 0; i < rowsToPrint.length; i++) {
                 resultsString += `${i + 1}: ${rowsToPrint[i].shopType} - ${escapeFormatting(rowsToPrint[i].shopOwner)}\n`
 
-                const button = new MessageButton()
+                const editButton = new MessageButton()
                     .setCustomId(`shop,editbyid,${rowsToPrint[i].shopId}`)
                     .setLabel(`Edit shop ${i + 1}`)
                     .setStyle('SECONDARY')
-                messageActionRow.addComponents(button)
+                editMessageActionRow.addComponents(editButton)
+
+                const deleteButton = new MessageButton()
+                    .setCustomId(`shop,deletebyid,${rowsToPrint[i].shopId}`)
+                    .setLabel(`Delete shop ${i + 1}`)
+                    .setStyle('DANGER')
+                deleteMessageActionRow.addComponents(deleteButton)
             }
 
-            i.reply({ content: `Here are the top ${rowsToPrint.length} results based on your search. Click a button below:\n${resultsString}`, components: [messageActionRow] })
+            i.reply({ content: `Here are the top ${rowsToPrint.length} results based on your search. Click a button below:\n${resultsString}`, components: [editMessageActionRow, deleteMessageActionRow] })
         })
 
         return

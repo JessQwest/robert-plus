@@ -114,10 +114,7 @@ export async function interactionCreateModal(client: Client, i: Interaction) {
                 console.log('No rows found.')
             }
         })
-
-
     }
-
 }
 
 

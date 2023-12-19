@@ -20,7 +20,6 @@ import {
     APPLICATION_MAP_CHANNEL_ID,
     APPLICATION_MAP_MESSAGE_ID,
     APPLICATION_NOTIFICATION_CHANNEL_ID,
-    APPLICATION_SHOP_CHANNEL_ID,
     APPLICATION_SHOP_MESSAGE_ID,
     APPLICATION_SHOP_NOTIFICATION_CHANNEL_ID,
     APPLICATION_SHOP_VOTING_CHANNEL_ID,
@@ -34,7 +33,7 @@ import {
 } from "./index"
 import {discordIdToMinecraftUuid, nameToUuid, usernameCheck, uuidToUsername} from "./api"
 import {
-    getQuestions, QUESTION_SET_APPLICATION, QUESTION_SET_MAP, QUESTION_SET_SHOP, REQ_OPTIONAL_TEXT,
+    getQuestions, QUESTION_SET_APPLICATION, QUESTION_SET_MAP, QUESTION_SET_SHOP,
     VISIBILITY_ALL, VISIBILITY_ALL_UNIQUE_IDENTIFIER,
     VISIBILITY_NOTIFICATION_ONLY,
     VISIBILITY_REVIEW_ONLY
@@ -47,6 +46,7 @@ export const applicationStatusDictionary: Record<string, string> = {
     'badappreject': 'Rejected for bad application',
     'underagereject': 'Rejected for underage application',
     'genericreject': 'Rejected (no specific reason given)',
+    'dismissed': 'Dismissed by staff'
 }
 
 export var activeApplications: InProgressApplication[] = []

@@ -1,15 +1,24 @@
 import {
     ButtonInteraction,
     Client,
-    Interaction, MessageActionRow, MessageButton,
-    MessageEmbed, Modal, TextInputComponent
+    Interaction, InteractionReplyOptions, MessageActionRow, MessageButton,
+    MessageEmbed, Modal, TextChannel, TextInputComponent
 } from "discord.js"
 import {escapeFormatting, getDiscordDisplayName, jaccardIndex, verifyUsernameInput} from "./utility"
 import * as DiscordJS from "discord.js"
 import {
-    APPLICATION_CHANNEL_ID, APPLICATION_NOTIFICATION_CHANNEL_ID,
-    con, DEBUGMODE, IS_APPLICATION_ENABLED, IS_MAP_APPLICATION_ENABLED, IS_SHOP_APPLICATION_ENABLED,
-    NO_EMOJI, RULE_PHRASE_EMOJI,
+    APPLICATION_CHANNEL_ID,
+    APPLICATION_MAP_CHANNEL_ID,
+    APPLICATION_NOTIFICATION_CHANNEL_ID,
+    APPLICATION_SHOP_MESSAGE_ID,
+    client,
+    con,
+    DEBUGMODE,
+    IS_APPLICATION_ENABLED,
+    IS_MAP_APPLICATION_ENABLED,
+    IS_SHOP_APPLICATION_ENABLED,
+    NO_EMOJI,
+    RULE_PHRASE_EMOJI,
     RULE_PHRASE_TEXT,
     SERVER_NAME,
     YES_EMOJI
@@ -31,7 +40,7 @@ import {
     buttonGotoPreviousQuestion,
     buttonPostApplication,
     buttonSkipQuestion,
-    createApplication,
+    createApplication, dismissApplication, lookupApplication,
     lookupApplicationByUniqueIdentifier,
     QUESTION_SET_APPLICATION,
     QUESTION_SET_MAP,
@@ -117,6 +126,52 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
             removeMapCoord(i.user.id)
             await rebuildMapMessage()
             await i.reply({ephemeral: true, content: "Your map coordinates have been removed if you had any."})
+        }
+        else if (splitCustomId[1] === "dismiss") {
+            if (!(i.component instanceof MessageButton)) return
+            if (splitCustomId.length >= 4 && splitCustomId[3] == "confirm") {
+                // if this is a confirmation button
+                let application = lookupApplicationByUniqueIdentifier(splitCustomId[2])
+                let messageId = await dismissApplication(splitCustomId[2])
+                if (messageId == null) {
+                    await i.update({ content: `Could not dismiss the application. It might have already been dismissed`, components: [] })
+                    await i.deferUpdate()
+                    return
+                }
+                let applicationMessage = await i.channel.messages.fetch(messageId)
+                applicationMessage.react(`🚫`)
+                // for main applications, react to the main application and record in the database
+                if (application?.questionSet == QUESTION_SET_APPLICATION) {
+                    let appChannel = client.channels.cache.get(APPLICATION_CHANNEL_ID)
+                    if (appChannel != null && appChannel.isText()) {
+                        let message = appChannel.messages.cache.get(application.applicationMessageId)
+                        if (message != null) message.react(`🚫`)
+                    }
+                    con.query(`UPDATE applicationhistory SET status = ? WHERE messageId = ?`, ["dismissed", messageId], (err: any, result: { affectedRows: number }) => {
+                        if (err) {
+                            console.error('Error updating status:', err)
+                        } else {
+                            if (result.affectedRows > 0) {
+                                console.log(`Status updated for message ID ${messageId}`)
+                            } else {
+                                console.log(`No rows were affected for message ID ${messageId}`)
+                            }
+                        }
+                    })
+                }
+                await applicationMessage.reply({content: `This application has been dismissed by ${i.user.username}` })
+                await i.update({ content: `You have dismissed this application`, components: [] })
+                await i.deferUpdate()
+            } else {
+                // if not a confirmation button, post one
+                const application = lookupApplicationByUniqueIdentifier(splitCustomId[2])
+                if (application == null) {
+                    await i.deferUpdate()
+                    return
+                }
+                const reply = await getConfirmationButton(i.component)
+                i.reply(reply)
+            }
         }
         return
     }
@@ -494,4 +549,24 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
         messageAndKick(i, escapedMcUsername, b.user.username, discordUser, `Thank you for your interest in ${SERVER_NAME}!\nUnfortunately, your application on this occasion has not been successful.\nHave a great day.`)
         await i.update({ content: `${escapedMcUsername} was rejected and kicked by ${b.user.username} for a bad application`, components: [] })
     }
+}
+
+export async function getConfirmationButton(button: MessageButton): Promise<InteractionReplyOptions> {
+    const buttonLabel = button.label
+    const buttonId = button.customId
+
+    const reply: InteractionReplyOptions = {
+        content: "Click the button to confirm this action.",
+        ephemeral: true,
+        components: [
+            new MessageActionRow()
+                .addComponents(
+                    new MessageButton()
+                        .setCustomId(`${buttonId},confirm`)
+                        .setLabel(`Confirm ${buttonLabel}`)
+                        .setStyle('DANGER')
+                )
+        ]
+    }
+    return reply
 }

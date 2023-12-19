@@ -1,7 +1,7 @@
 import {
     APPLICATION_MAX_REMIND_TIMES,
     APPLICATION_NOTIFICATION_CHANNEL_ID,
-    APPLICATION_SERVER_ID,
+    APPLICATION_SERVER_ID, APPLICATION_SHOP_NOTIFICATION_CHANNEL_ID, APPLICATION_SHOP_VOTING_CHANNEL_ID,
     APPLICATION_VOTE_REMINDER_THRESHOLD_HOURS, APPLICATION_VOTER_ROLE_ID,
     APPLICATION_VOTING_CHANNEL_ID,
     BOT_INFO_CHANNEL_ID,
@@ -12,7 +12,12 @@ import {
 import {TextChannel} from "discord.js"
 import {activeApplications} from "./zTopic_application_management"
 import {escapeFormatting} from "./utility"
-import {QUESTION_SET_APPLICATION, QUESTION_SET_SHOP} from "./zTopic_application_creator"
+import {
+    QUESTION_SET_APPLICATION,
+    QUESTION_SET_SHOP,
+    VISIBILITY_ALL_UNIQUE_IDENTIFIER
+} from "./zTopic_application_creator"
+import * as DiscordJS from "discord.js"
 
 var Jessica: string = "252818596777033729"
 var schrute: string = "699331874408890378"
@@ -38,29 +43,34 @@ export async function dailyHousekeepTask() {
 
 async function postApplicationVotingReminder() {
     const applicationGuild = client.guilds.cache.get(APPLICATION_SERVER_ID)
-    let appChannel = client.channels.cache.get(APPLICATION_VOTING_CHANNEL_ID)
-    const applicationVotingChannel = client.channels.cache.get(APPLICATION_VOTING_CHANNEL_ID)
-    if (applicationVotingChannel == null || !(applicationVotingChannel instanceof TextChannel)) {
-        console.error(`APPLICATION NOTIFICATION CHANNEL NULL (jx0047)`)
-        return
-    }
+
     if (applicationGuild == null) {
         console.error(`APPLICATION GUILD OR MAIN GUILD NULL (jx0045)`)
         return
     }
-    if (appChannel == null || !appChannel.isText()) {
-        console.error(`APP CHANNEL NOT VALID NULL (jx0048)`)
-        return
-    }
 
-    for (const application of activeApplications) {
+    const applicationsForReminder = activeApplications.filter(a => a.applicationStatus == "active")
+
+    for (const application of applicationsForReminder) {
         // check if it has been enough time to send a reminder
         const currentTime = new Date().getTime()
         const timeDifferenceMilliseconds = currentTime - application.lastNotificationDatetime.getTime()
         const timeDifferenceHours = timeDifferenceMilliseconds / 1000 / 60 / 60
         if (timeDifferenceHours >= APPLICATION_VOTE_REMINDER_THRESHOLD_HOURS) {
+            // get the right channel to post in
+            let applicationChannel: DiscordJS.AnyChannel | undefined
+            if (application.questionSet == QUESTION_SET_APPLICATION) {
+                applicationChannel = client.channels.cache.get(APPLICATION_VOTING_CHANNEL_ID)
+            } else if (application.questionSet == QUESTION_SET_SHOP) {
+                applicationChannel = client.channels.cache.get(APPLICATION_SHOP_VOTING_CHANNEL_ID)
+            }
+            if (applicationChannel == null || !(applicationChannel instanceof TextChannel)) {
+                console.error(`APPLICATION NOTIFICATION CHANNEL NULL (jx0047)`)
+                continue
+            }
+
             // check who has reacted/voted so far
-            let message = appChannel.messages.cache.get(application.applicationSummaryId)
+            let message = applicationChannel.messages.cache.get(application.applicationSummaryId)
             if (message == null) continue
             let reactionIds: String[] = []
             message.reactions.cache.forEach(r => {
@@ -103,7 +113,7 @@ async function postApplicationVotingReminder() {
             else if (application.questionSet == QUESTION_SET_SHOP) name = application.answers[0]
 
             voteReminderString += `Voting for ${escapeFormatting(name)} is still open! ${votingLinkString}${unvotedMembersString}`
-            await applicationVotingChannel.send(voteReminderString)
+            await applicationChannel.send(voteReminderString)
 
             application.lastNotificationDatetime = new Date()
             application.remindedCount++

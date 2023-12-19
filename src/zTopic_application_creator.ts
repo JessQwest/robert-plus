@@ -2,11 +2,8 @@ import * as DiscordJS from "discord.js"
 import {containsRulePhrase, escapeFormatting, unescapeFormatting, verifyUsernameInput} from "./utility"
 import {MessageActionRow, MessageButton, MessageEmbed, TextChannel} from "discord.js"
 import {
-    APPLICATION_CHANNEL_ID, APPLICATION_MAP_CHANNEL_ID, APPLICATION_MAP_FORM_CHANNEL_ID, APPLICATION_MAP_MESSAGE_ID,
+    APPLICATION_CHANNEL_ID, APPLICATION_MAP_FORM_CHANNEL_ID,
     APPLICATION_NOTIFICATION_CHANNEL_ID, APPLICATION_SHOP_CHANNEL_ID,
-    APPLICATION_SHOP_NOTIFICATION_CHANNEL_ID,
-    APPLICATION_SHOP_VOTING_CHANNEL_ID,
-    APPLICATION_VOTING_CHANNEL_ID,
     client,
     SERVER_NAME
 } from "./index"
@@ -97,6 +94,13 @@ export function lookupApplicationByMessageSummaryId(messageId: string): InProgre
 
 export function lookupApplicationByUniqueIdentifier(uniqueIdentifier: string): InProgressApplication | undefined {
     return activeApplications.find(item => item.uniqueIdentifier === uniqueIdentifier && item.applicationStatus == "active")
+}
+
+export function dismissApplication(uniqueIdentifier: string): string | null {
+    const application = lookupApplicationByUniqueIdentifier(uniqueIdentifier)
+    if (application == null) return null
+    application.applicationStatus = "dismissed"
+    return application.applicationSummaryId
 }
 
 export async function createApplication(user: DiscordJS.User, questionSet: string): Promise<string> {
@@ -258,7 +262,7 @@ async function dmUserApplicationSubmissionConfirmation(user: DiscordJS.User) {
         .setTitle(`Would you like to submit these answers?`)
         .setColor(`#10c1e0`)
 
-    const playerApplication =  lookupApplication(user.id)
+    const playerApplication = lookupApplication(user.id)
     if (playerApplication == null) return
 
     const messageActionRow = generateButtons(playerApplication, playerApplication.currentQuestionNo)
@@ -313,7 +317,7 @@ function generateButtons(playerApplication: InProgressApplication, questionNo: n
 }
 
 export async function buttonGotoPreviousQuestion(user: DiscordJS.User) {
-    const playerApplication =  lookupApplication(user.id)
+    const playerApplication = lookupApplication(user.id)
     if (playerApplication == null) return
 
     if (playerApplication.currentQuestionNo - 1 >= 0 && playerApplication.answers[playerApplication.currentQuestionNo - 1] != '') {
@@ -323,7 +327,7 @@ export async function buttonGotoPreviousQuestion(user: DiscordJS.User) {
 }
 
 export async function buttonGotoNextQuestion(user: DiscordJS.User) {
-    const playerApplication =  lookupApplication(user.id)
+    const playerApplication = lookupApplication(user.id)
     if (playerApplication == null) return
 
     if (playerApplication.currentQuestionNo + 1 < playerApplication.getQuestionSet().length && playerApplication.answers[playerApplication.currentQuestionNo] != '') {
@@ -333,7 +337,7 @@ export async function buttonGotoNextQuestion(user: DiscordJS.User) {
 }
 
 export async function buttonCancelApplication(user: DiscordJS.User) {
-    const playerApplication =  lookupApplication(user.id)
+    const playerApplication = lookupApplication(user.id)
     if (playerApplication == null) {
         await user.send(`You don't have an application in progress.`)
     }
@@ -344,7 +348,7 @@ export async function buttonCancelApplication(user: DiscordJS.User) {
 }
 
 export async function buttonSkipQuestion(user: DiscordJS.User) {
-    const playerApplication =  lookupApplication(user.id)
+    const playerApplication = lookupApplication(user.id)
     if (playerApplication == null) {
         await user.send(`You don't have an application in progress.`)
     }
@@ -354,7 +358,7 @@ export async function buttonSkipQuestion(user: DiscordJS.User) {
 }
 
 export async function buttonAgreeQuestion(user: DiscordJS.User) {
-    const playerApplication =  lookupApplication(user.id)
+    const playerApplication = lookupApplication(user.id)
     if (playerApplication == null) {
         await user.send(`You don't have an application in progress.`)
     }
@@ -364,7 +368,7 @@ export async function buttonAgreeQuestion(user: DiscordJS.User) {
 }
 
 export async function buttonPostApplication(user: DiscordJS.User) {
-    const playerApplication =  lookupApplication(user.id)
+    const playerApplication = lookupApplication(user.id)
     if (playerApplication == null) {
         await user.send(`You don't have an application in progress.`)
         return
@@ -387,7 +391,7 @@ export async function buttonPostApplication(user: DiscordJS.User) {
         .setFooter({text: `Applicant: ${user.username}\nID: ${user.id}`})
         .setColor(`#ff1541`)
 
-    let appChannel:  DiscordJS.AnyChannel | undefined
+    let appChannel: DiscordJS.AnyChannel | undefined
     if (playerApplication.questionSet == QUESTION_SET_APPLICATION) appChannel = client.channels.cache.get(APPLICATION_CHANNEL_ID)
     else if (playerApplication.questionSet == QUESTION_SET_SHOP) appChannel = client.channels.cache.get(APPLICATION_SHOP_CHANNEL_ID)
     else if (playerApplication.questionSet == QUESTION_SET_MAP) appChannel = client.channels.cache.get(APPLICATION_MAP_FORM_CHANNEL_ID)
