@@ -117,11 +117,12 @@ export async function processNewApplication(application: InProgressApplication) 
         let mcUsername = await uuidToUsername(mcUuid) ?? "unknown"
         if (mcUsername == "unknown") return
 
-        let coordinateText = `${escapeFormatting(mcUsername)}: ${application.answers[0]}, ${application.answers[1]}`
+        const xCoord = application.answers[0]
+        const zCoord = application.answers[1]
         // update the message in the database
         con.query(
-            'INSERT INTO `map` (`discordId`, `text`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `text` = VALUES(`text`)',
-            [application.discordId, coordinateText],
+            'INSERT INTO `map` (`discordId`, `name`, `xCoord`, `zCoord`) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), xCoord = VALUES(xCoord), zCoord = VALUES(zCoord);',
+            [application.discordId, mcUsername, xCoord, zCoord],
             function (err: any, result: any, fields: any) {
                 if (err) {
                     console.error(err)
@@ -279,6 +280,10 @@ export async function rebuildShopMessage() {
     )
 }
 
+interface CoordinateGroups {
+    [key: string]: string[]
+}
+
 export async function rebuildMapMessage() {
     // rebuild the edited message
     let mapChannel = client.channels.cache.get(APPLICATION_MAP_CHANNEL_ID)
@@ -286,15 +291,32 @@ export async function rebuildMapMessage() {
     let mapMessage = await mapChannel.messages.fetch(APPLICATION_MAP_MESSAGE_ID)
 
     con.query(
-        'SELECT `text` FROM `map` ORDER BY `text` ASC',
-        function (err: Error | null, result: any[]) {
+        'SELECT name, xCoord, zCoord FROM map ORDER BY name ASC',
+        function (err: Error | null, results: any[]) {
             if (err) {
                 console.error(err)
                 return
             }
 
-            const texts: string[] = result.map(row => row.text)
-            const concatenatedText: string = texts.join('\n')
+            // Process the results
+            const coordinateGroups: CoordinateGroups = {}
+            results.forEach((row) => {
+                const key = `${row.xCoord}, ${row.zCoord}`
+                if (coordinateGroups[key]) {
+                    coordinateGroups[key].push(row.name)
+                } else {
+                    coordinateGroups[key] = [row.name]
+                }
+            })
+
+            // Print the results
+            const resultList: string[] = []
+            Object.entries(coordinateGroups).forEach(([coordinates, names]) => {
+                const namesString = names.length > 1 ? names.slice(0, -1).join(', ') + ' & ' + names.slice(-1) : names[0]
+                resultList.push(`${escapeFormatting(namesString)}: ${coordinates}`)
+            })
+
+            const concatenatedText: string = resultList.join('\n')
 
             mapMessage.edit(`**__Base locations:__**\n${concatenatedText}`)
         }

@@ -79,7 +79,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
         if (splitCustomId[1] === "start") {
             //check if creating application is allowed
             const applicationType = splitCustomId[2]
-            if (DEBUGMODE && i.user.id != "252818596777033729") {
+            if (DEBUGMODE && i.user.id != "252818596777033729" && i.guild?.id != "772844397020184576") {
                 await i.reply({ ephemeral: true, content: `Applications are currently disabled. Please try again later.` })
                 return
             }
