@@ -272,7 +272,7 @@ export async function rebuildShopMessage() {
             // Iterate over each record in the result array
             result.forEach((record) => {
                 // Format the information and concatenate to the result string
-                concatenatedText += `${record.shopType} (${record.shopOwner}) X:${record.xCoord}, Z:${record.zCoord}\n`
+                concatenatedText += `${record.shopType} (${escapeFormatting(record.shopOwner)}) X:${record.xCoord}, Z:${record.zCoord}\n`
             })
             mapMessage.edit(`**__Shops:__**\n${concatenatedText}`)
         }

@@ -105,9 +105,9 @@ export async function interactionCreateModal(client: Client, i: Interaction) {
                     function (err: any, result: any, fields: any) {
                         if (err) throw err
                         console.log('Update successful')
+                        rebuildShopMessage()
                     }
                 )
-                rebuildShopMessage()
 
                 i.reply({ content: `${shopType} - ${shopOwner}: Edited by ${escapeFormatting(i.user.username)}\n${changes}` })
             } else {
