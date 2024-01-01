@@ -201,4 +201,8 @@ export function registerCommands() {
         }]
     })
 
+    commands?.create({
+        name: 'shopcheck',
+        description: "Starts doing a shop check"
+    })
 }

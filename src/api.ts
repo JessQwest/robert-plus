@@ -1,4 +1,4 @@
-import {capitalizeFirstLetter, escapeFormatting, verifyUsernameInput} from "./utility"
+import {capitalizeFirstLetter, escapeFormatting, getDiscordDisplayName, verifyUsernameInput} from "./utility"
 import fetch from "node-fetch"
 import {con, RULE_PHRASE_TEXT} from "./index"
 import * as DiscordJS from "discord.js"

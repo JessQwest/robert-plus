@@ -30,6 +30,7 @@ import {
 import { v4 as uuidv4 } from 'uuid'
 import {nameToUuid} from "./api"
 import {createRoleButton} from "./zTopic_role_manager"
+import {startShopCheck} from "./zTopic_shop_check"
 
 export async function interactionCreateCommand(client: Client, i: Interaction) {
     if (!i.isCommand()) return
@@ -344,6 +345,13 @@ export async function interactionCreateCommand(client: Client, i: Interaction) {
                 "Other details about the server can be found in the #information tab\n" +
                 `And welcome to ${SERVER_NAME}!`
         })
+        return
+    }
+
+    if (commandName === "shopcheck") {
+        if (i.channel == null) return
+        startShopCheck(i.channel, i.user)
+        i.reply({content: "Shop check started!", ephemeral: true})
         return
     }
 

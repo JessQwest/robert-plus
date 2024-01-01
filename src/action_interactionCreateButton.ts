@@ -1,7 +1,7 @@
 import {
     ButtonInteraction,
     Client,
-    Interaction, InteractionReplyOptions, MessageActionRow, MessageButton,
+    Interaction, InteractionReplyOptions, Message, MessageActionRow, MessageButton,
     MessageEmbed, Modal, TextChannel, TextInputComponent
 } from "discord.js"
 import {escapeFormatting, getDiscordDisplayName, jaccardIndex, verifyUsernameInput} from "./utility"
@@ -49,6 +49,15 @@ import {
 import {manageUserRole} from "./zTopic_role_manager"
 import {messageAndKick} from "./action_interactionCreateCommand"
 import {createShopEditModal} from "./action_interactionCreateModal"
+import {
+    cancelShopCheck, isShopCheckInProgress,
+    joinShopCheck,
+    markShopStock,
+    STOCK_INSTOCK,
+    STOCK_OUTOFSTOCK,
+    STOCK_OUTOFSTOCK7D,
+    STOCK_SERVICE
+} from "./zTopic_shop_check"
 
 export var buttonIDSet : Set<string> = new Set
 export async function interactionCreateButton(client: Client, i: Interaction) {
@@ -336,7 +345,86 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
         return
     }
 
-    // buttons past this point are single use and can only be interacted with one
+    if (splitCustomId[0] === "shopcheck") {
+        if (!(i.component instanceof MessageButton)) return
+        if (!isShopCheckInProgress()) {
+            i.reply({content: `Shop check not in progress!`, ephemeral: true})
+            return
+        }
+        if (splitCustomId[1] === "join") {
+            joinShopCheck(i.user)
+            await i.deferUpdate()
+        } else if (splitCustomId[1] === "cancel") {
+            if (splitCustomId.length >= 3 && splitCustomId[2] == "confirm") {
+                cancelShopCheck()
+            } else {
+                const reply = await getConfirmationButton(i.component)
+                i.reply(reply)
+            }
+        } else if (splitCustomId[1] === "stock") {
+            // check if the button presser is the shop assigned checker
+            if (splitCustomId[4] != i.user.id && splitCustomId.length < 6) {
+                const reply = await getConfirmationButton(i.component, i.message.id)
+                reply.content = `You are not the assigned checker for this shop, please confirm that you want to submit stock for this shop.\n\n${reply.content}`
+                i.reply(reply)
+                return
+            }
+
+            let discordUser: DiscordJS.User | undefined
+            const userPromise = client.users.fetch(splitCustomId[4]).then(value => {
+                discordUser = value
+
+                let successfulSet: boolean = false
+                if (splitCustomId[2] === "instock") {
+                    successfulSet = markShopStock(splitCustomId[3], STOCK_INSTOCK, discordUser)
+                } else if (splitCustomId[2] === "outofstock") {
+                    successfulSet = markShopStock(splitCustomId[3], STOCK_OUTOFSTOCK, discordUser)
+                } else if (splitCustomId[2] === "outofstock7d") {
+                    successfulSet = markShopStock(splitCustomId[3], STOCK_OUTOFSTOCK7D, discordUser)
+                } else if (splitCustomId[2] === "service") {
+                    successfulSet = markShopStock(splitCustomId[3], STOCK_SERVICE, discordUser)
+                } else if (splitCustomId[2] === "skip") {
+                    successfulSet = markShopStock(splitCustomId[3], "", discordUser)
+                }
+
+                if (successfulSet) {
+                    // check if message id is specified for a react (if done by another player)
+                    let messageToReact: Message | null = null
+                    if (splitCustomId.length >= 6) {
+                        if (i.channel == null) return
+                        console.log(`Fetching splitCustomId ${splitCustomId[6]} from channel ${i.channel.id}`)
+                        i.channel.messages.fetch(splitCustomId[6]).then(message => {
+                            if (message != null) {
+                                messageToReact = message
+                                messageToReact.react(YES_EMOJI)
+                                messageToReact.edit({content: `Button '${splitCustomId[2]}' clicked by ${i.user.username}`})
+                            }
+                        })
+                    } else if (i.message instanceof Message) {
+                        messageToReact = i.message
+                        messageToReact.react(YES_EMOJI)
+                        messageToReact.edit({content: `Button '${splitCustomId[2]}' clicked by ${i.user.username}`})
+                    }
+
+                    i.deferUpdate()
+                } else {
+                    i.reply({content: `Shop check not in progress`, ephemeral: true})
+                }
+
+            }).catch(error => {
+                console.log(`Error in getting username: ${error} (jx0065)`)
+                if (i.channel == null) {
+                    console.log(`Error in reporting getting username error (jx0066)`)
+                    return
+                }
+                i.channel.send("Could not get discord username, Jess probably did a bad")
+                return
+            })
+        }
+        return
+    }
+
+    // buttons past this point are single use and can only be interacted with once
 
     // check for button clash
     if (!buttonIDSet.has(b.message.id)) {
@@ -611,9 +699,13 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
     }
 }
 
-export async function getConfirmationButton(button: MessageButton): Promise<InteractionReplyOptions> {
+export async function getConfirmationButton(button: MessageButton, extraInfo: string = ""): Promise<InteractionReplyOptions> {
     const buttonLabel = button.label
     const buttonId = button.customId
+
+    if (extraInfo != "") {
+        extraInfo = `,${extraInfo}`
+    }
 
     const reply: InteractionReplyOptions = {
         content: "Click the button to confirm this action.",
@@ -622,7 +714,7 @@ export async function getConfirmationButton(button: MessageButton): Promise<Inte
             new MessageActionRow()
                 .addComponents(
                     new MessageButton()
-                        .setCustomId(`${buttonId},confirm`)
+                        .setCustomId(`${buttonId},confirm${extraInfo}`)
                         .setLabel(`Confirm ${buttonLabel}`)
                         .setStyle('DANGER')
                 )

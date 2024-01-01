@@ -58,6 +58,12 @@ features:
   # Discord role used for the birthday ID
   birthday-role-id: ''
 
+  shop-check:
+    shop-stocked-emoji: ''
+    shop-unstocked-emoji: ''
+    shop-unstocked-7d-emoji: ''
+    shop-service-emoji: ''
+
 rule-checking:
   # This module scans applications by applicants to see if they mention the primary phrase. It is best to have this for something that has a corresponding emoji, like a duck
 
