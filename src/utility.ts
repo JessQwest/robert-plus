@@ -1,5 +1,6 @@
 import {RULE_MATCH_STRINGS, RULE_PHRASE_TEXT} from "./index"
 import * as DiscordJS from "discord.js"
+import {ColorResolvable} from "discord.js"
 
 export function escapeFormatting(input: string): string {
     if (input.includes("\\")) {
@@ -80,4 +81,45 @@ export function jaccardIndex(str1: string, str2: string): number {
     const unionSize = set1.size + set2.size - intersectionSize
 
     return intersectionSize / unionSize
+}
+
+export function stringToEmbeds(title: string, description: string, color: ColorResolvable = "#208386"): DiscordJS.MessageEmbed[] {
+    const embeds: DiscordJS.MessageEmbed[] = []
+    const lines = groupLines(description)
+    let setTitle = false
+    for (const line of lines) {
+        let nextEmbed = new DiscordJS.MessageEmbed()
+            .setColor(color)
+            .setDescription(line)
+
+        if (!setTitle) {
+            nextEmbed.setTitle(title)
+            setTitle = true
+        }
+
+        embeds.push(nextEmbed)
+    }
+    return embeds
+}
+
+
+function groupLines(inputString: string): string[] {
+    const lines = inputString.split('\n')
+    const groupedLines: string[] = []
+    let currentGroup: string[] = []
+
+    for (const line of lines) {
+        if (currentGroup.join('\n').length + line.length <= 4000) {
+            currentGroup.push(line)
+        } else {
+            groupedLines.push(currentGroup.join('\n'))
+            currentGroup = [line]
+        }
+    }
+
+    if (currentGroup.length > 0) {
+        groupedLines.push(currentGroup.join('\n'))
+    }
+
+    return groupedLines
 }

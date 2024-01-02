@@ -40,6 +40,12 @@ export const NO_EMOJI: string = config.get('emojis.no.emoji')
 export const REDSTONE_EMOJI_ID: string = config.get('emojis.debug.id')
 export const REDSTONE_EMOJI: string = config.get('emojis.debug.emoji')
 
+export const SHOP_STOCK_EMOJI: string = config.get('features.shop-check.shop-stocked-emoji')
+export const SHOP_NOSTOCK_EMOJI: string = config.get('features.shop-check.shop-unstocked-emoji')
+export const SHOP_NOSTOCK_7DAY_EMOJI: string = config.get('features.shop-check.shop-unstocked-7d-emoji')
+export const SHOP_SERVICE_EMOJI: string = config.get('features.shop-check.shop-service-emoji')
+
+
 // channel constants
 export const DEBUG_CHANNEL_ID = config.get('debug-mode.debug-channel-id')
 

@@ -11,7 +11,7 @@ import {
 } from "discord.js"
 import {
     capitalizeFirstLetter, containsRulePhrase,
-    escapeFormatting,
+    escapeFormatting, stringToEmbeds,
     unescapeFormatting,
     verifyUsernameInput
 } from "./utility"
@@ -29,6 +29,10 @@ import {
     NO_EMOJI,
     RULE_PHRASE_EMOJI,
     RULE_PHRASE_TEXT,
+    SHOP_NOSTOCK_7DAY_EMOJI,
+    SHOP_NOSTOCK_EMOJI,
+    SHOP_SERVICE_EMOJI,
+    SHOP_STOCK_EMOJI,
     YES_EMOJI
 } from "./index"
 import {discordIdToMinecraftUuid, nameToUuid, usernameCheck, uuidToUsername} from "./api"
@@ -38,6 +42,7 @@ import {
     VISIBILITY_NOTIFICATION_ONLY,
     VISIBILITY_REVIEW_ONLY
 } from "./zTopic_application_creator"
+import {STOCK_INSTOCK, STOCK_OUTOFSTOCK, STOCK_OUTOFSTOCK7D, STOCK_SERVICE} from "./zTopic_shop_check"
 
 export const applicationStatusDictionary: Record<string, string> = {
     'accept': 'Application Accepted',
@@ -259,23 +264,31 @@ export async function rebuildShopMessage() {
     // rebuild the edited message
     let mapsShopsChannel = client.channels.cache.get(APPLICATION_MAP_CHANNEL_ID)
     if (!(mapsShopsChannel instanceof TextChannel)) return
-    let mapMessage = await mapsShopsChannel.messages.fetch(APPLICATION_SHOP_MESSAGE_ID)
+    let shopMessage = await mapsShopsChannel.messages.fetch(APPLICATION_SHOP_MESSAGE_ID)
+
+    const shopIntroduction = `This is a list of all the shops on the server. If you would like to add a shop to this list, please click the button at the bottom of this channel.\n\n${SHOP_STOCK_EMOJI} = In stock\n${SHOP_NOSTOCK_EMOJI} = Recently Out of stock\n${SHOP_NOSTOCK_7DAY_EMOJI} = Out of stock for a while\n${SHOP_SERVICE_EMOJI} = Service\n\n`
 
     con.query(
-        'SELECT `shopOwner`, `shopType`, `xCoord`, `zCoord` FROM `shop` ORDER BY `shopType` ASC',
+        'SELECT * FROM `shop` ORDER BY `shopType` ASC',
         function (err: Error | null, result: any[]) {
             if (err) {
                 console.error(err)
                 return
             }
-            let concatenatedText = ''
+            let concatenatedText = shopIntroduction
 
             // Iterate over each record in the result array
             result.forEach((record) => {
+                let shopIndicator = ""
+                if (record.stockLevel == STOCK_INSTOCK) shopIndicator = `${SHOP_STOCK_EMOJI} `
+                else if (record.stockLevel == STOCK_OUTOFSTOCK) shopIndicator = `${SHOP_NOSTOCK_EMOJI} `
+                else if (record.stockLevel == STOCK_OUTOFSTOCK7D) shopIndicator = `${SHOP_NOSTOCK_7DAY_EMOJI} `
+                else if (record.stockLevel == STOCK_SERVICE) shopIndicator = `${SHOP_SERVICE_EMOJI} `
                 // Format the information and concatenate to the result string
-                concatenatedText += `${record.shopType} (${escapeFormatting(record.shopOwner)}) X:${record.xCoord}, Z:${record.zCoord}\n`
+                concatenatedText += `${shopIndicator}${record.shopType} (${escapeFormatting(record.shopOwner)}) X:${record.xCoord}, Z:${record.zCoord}\n`
             })
-            mapMessage.edit(`**__Shops:__**\n${concatenatedText}`)
+            let embeds = stringToEmbeds("Shop Locations", concatenatedText)
+            shopMessage.edit({content: " ", embeds: embeds})
         }
     )
 }
@@ -318,7 +331,8 @@ export async function rebuildMapMessage() {
 
             const concatenatedText: string = resultList.join('\n')
 
-            mapMessage.edit(`**__Base locations:__**\n${concatenatedText}`)
+            let embeds = stringToEmbeds("Base Locations", concatenatedText)
+            mapMessage.edit({content: " ", embeds: embeds})
         }
     )
 }
