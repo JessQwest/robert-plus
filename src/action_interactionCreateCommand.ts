@@ -5,7 +5,7 @@ import {
     Interaction, MessageActionRow, MessageButton,
     MessageEmbed, Modal,
     RateLimitError, Role,
-    TextChannel, TextInputComponent
+    TextChannel, TextInputComponent, User
 } from "discord.js"
 import {
     countCharacterChanges,
@@ -164,40 +164,34 @@ export async function interactionCreateCommand(client: Client, i: Interaction) {
 
     if (commandName === "bedtime") {
         let bedtimeSuccess = false
-        let timeoutusername = "You have"
-        let guildmember
-        // @ts-ignore
-        guildmember = await guild?.members.fetch(options.getUser("username"))
-        // @ts-ignore
-        if (options.getUser("username") === null || (!i.memberPermissions.has("ADMINISTRATOR") && i.user.id !== "430518858097360907")) {
-            if (member instanceof GuildMember && i.channel != null) {
-                bedtimeSuccess = await bedtimeUser(member)
+        let targetedUser: User | null = options.getUser("username")
+        let targetedGuildMember: GuildMember | undefined = undefined
+        let adminTriggered: boolean = false
+        if (targetedUser != null) {
+            targetedGuildMember = await guild?.members.fetch(targetedUser)
+            adminTriggered = true
+        } else {
+            targetedGuildMember = await guild?.members.fetch(i.user)
+        }
+        if (targetedGuildMember == undefined) {
+            await i.reply("Cannot find user")
+            return
+        }
+        // if a user has been targeted and the executer has admin perms
+        if (adminTriggered && !i?.memberPermissions?.has("ADMINISTRATOR")) {
+            bedtimeSuccess = await timeoutUser(targetedGuildMember, 6,`${targetedGuildMember.nickname} has been sent to bed by ${i.user.username}!`)
+            if (bedtimeSuccess) {
+                i.reply(`${targetedGuildMember.nickname} has been sent to bed by ${i.user.username}!`)
+                return
+            }
+        } else {
+            bedtimeSuccess = await timeoutUser(targetedGuildMember, 6, `${i.user.username} requested to go to bed`)
+            if (bedtimeSuccess) {
+                i.reply(`${i.user.username} requested to go to bed, see you in 6 hours!`)
+                return
             }
         }
-        // @ts-ignore
-        else if (options.getUser("username").id === "264183823716057089" && user.id === "430518858097360907") {
-            // @ts-ignore
-            bedtimeSuccess = await bedtimeUser(guildmember)
-            // @ts-ignore
-            timeoutusername = guildmember.user.username + " has"
-        }
-        // @ts-ignore
-        else if (i.memberPermissions.has("ADMINISTRATOR")) {
-            // @ts-ignore
-            bedtimeSuccess = await bedtimeUser(guildmember)
-            // @ts-ignore
-            timeoutusername = guildmember.user.username + " has"
-            // @ts-ignore
-            console.log("Admin timed out user " + options.getUser("username").username)
-        }
-        if (bedtimeSuccess) {
-            // @ts-ignore
-            await i.reply(timeoutusername + " requested to go to bed, see you in 6 hours!")
-        }
-        else{
-            // @ts-ignore
-            await i.reply("I am unable to send " + options.getUser("username").username + " to bed")
-        }
+        await i.reply(`I am unable to send ${targetedGuildMember.nickname} to bed`)
         return
     }
 
@@ -209,6 +203,35 @@ export async function interactionCreateCommand(client: Client, i: Interaction) {
         return
     }
     //=============================================================================================================================================================================================================================
+
+    if (commandName === "timeout") {
+        let targetedUser: User | null = options.getUser("user")
+        if (targetedUser == null) {
+            i.reply({content: "User not found (jx0067)", ephemeral: true})
+            return
+        }
+
+        let hours: number | null = options.getInteger("hours")
+        if (hours == null) {
+            i.reply({content: "Hours not found (jx0069)", ephemeral: true})
+            return
+        }
+
+        let targetedGuildMember: GuildMember | undefined = undefined
+        targetedGuildMember = await guild?.members.fetch(targetedUser)
+
+        if (targetedGuildMember == undefined) {
+            i.reply({content: "User not found (jx0068)", ephemeral: true})
+            return
+        }
+
+        const success = await timeoutUser(targetedGuildMember, hours,`${targetedGuildMember.nickname} has been timed out by ${i.user.username} for ${hours} hours.`)
+        if (success) {
+            i.reply(`${targetedGuildMember.nickname} has been timed out by ${i.user.username} for ${hours} hours.`)
+        }
+        return
+    }
+
 
     if (commandName === "editshop") {
         const description: string | null = options.getString("description")
@@ -572,14 +595,13 @@ export function messageAndKick(interaction: Interaction, kickedMcUsername: Strin
 }
 
 
-async function bedtimeUser(memberitem: GuildMember) {
+async function timeoutUser(member: GuildMember, durationHours: number, reason: string) {
     try {
-        await memberitem.timeout(6 * 60 * 60 * 1000, memberitem.user.username + " has requested to go to bed")
-        console.log("timed out " + memberitem.user.username)
+        await member.timeout(durationHours * 60 * 60 * 1000, reason)
+        console.log("timed out " + member.user.username)
         return true
     } catch (error) {
-        // @ts-ignore
-        console.log(error.message)
+        console.log(error)
         return false
     }
 }

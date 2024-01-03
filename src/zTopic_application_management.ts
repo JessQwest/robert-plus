@@ -266,7 +266,7 @@ export async function rebuildShopMessage() {
     if (!(mapsShopsChannel instanceof TextChannel)) return
     let shopMessage = await mapsShopsChannel.messages.fetch(APPLICATION_SHOP_MESSAGE_ID)
 
-    const shopIntroduction = `This is a list of all the shops on the server. If you would like to add a shop to this list, please click the button at the bottom of this channel.\n\n${SHOP_STOCK_EMOJI} = In stock\n${SHOP_NOSTOCK_EMOJI} = Recently Out of stock\n${SHOP_NOSTOCK_7DAY_EMOJI} = Out of stock for a while\n${SHOP_SERVICE_EMOJI} = Service\n\n`
+    const shopIntroduction = `This is a list of all the shops on the server. If you want to create your own shop, click the button at the bottom of this channel.\n\n${SHOP_STOCK_EMOJI} = In stock\n${SHOP_NOSTOCK_EMOJI} = Recently out of stock\n${SHOP_NOSTOCK_7DAY_EMOJI} = Out of stock for a while\n${SHOP_SERVICE_EMOJI} = Service\n\n`
 
     con.query(
         'SELECT * FROM `shop` ORDER BY `shopType` ASC',

@@ -205,4 +205,20 @@ export function registerCommands() {
         name: 'shopcheck',
         description: "Starts doing a shop check"
     })
+
+    commands?.create({
+        name: 'timeout',
+        description: "Times a user out for a specified number of hours",
+        options: [{
+            name: "user",
+            description: "The Discord user to time out",
+            required: true,
+            type: DiscordJS.Constants.ApplicationCommandOptionTypes.USER
+        },{
+            name: "hours",
+            description: "Number of hours to time out for",
+            required: true,
+            type: DiscordJS.Constants.ApplicationCommandOptionTypes.INTEGER
+        }]
+    })
 }
