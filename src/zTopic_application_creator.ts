@@ -49,7 +49,7 @@ export const shopquestions = [
     ["What do you wish to sell?", REQ_TINY_TEXT, VISIBILITY_ALL, "Shop type"],
     ["What is your shop X coordinate?", REQ_ANY_NUMBER, VISIBILITY_ALL, "X"],
     ["What is your shop Z coordinate?", REQ_ANY_NUMBER, VISIBILITY_ALL, "Z"],
-    ["I have read and I agree to the shop rules. I understand that if my shop is unstocked for a week I will get a 7 day notice to stock it via Discord, after which, without exceptional circumstances, the shop will be destroyed without notice.", REQ_AGREE, VISIBILITY_NONE, "Agree"]
+    ["I have read and I agree to the shop rules. I understand that I must initially stock within 24 hours, and that if my shop is unstocked for a week I will get a 7 day notice to stock it via Discord, after which the shop will be destroyed without notice.", REQ_AGREE, VISIBILITY_NONE, "Agree"]
 ]
 
 export const mapquestions = [
@@ -241,8 +241,14 @@ async function dmUserQuestion(user: DiscordJS.User, questionNo: number): Promise
     const currentUserInput = playerApplication.answers[questionNo]
     const embedDescription = currentUserInput === '' ? `Enter ${inputDescription}.` : `Your current answer: ${currentUserInput}\n\nEnter ${inputDescription}.`
 
+    let questionContents = playerApplication.getQuestionSet()[questionNo][0]
+    let questionPrefix = `Question ${questionNo + 1} of ${playerApplication.getQuestionSet().length}:`
+    if (questionContents.length + questionPrefix.length <= 256) {
+        questionContents = `${questionPrefix} ${questionContents}`
+    }
+
     let questionEmbed = new MessageEmbed()
-        .setTitle(`Question ${questionNo + 1} of ${playerApplication.getQuestionSet().length}: ${playerApplication.getQuestionSet()[questionNo][0]}`)
+        .setTitle(questionContents)
         .setDescription(embedDescription)
         .setColor(`#10c1e0`)
 

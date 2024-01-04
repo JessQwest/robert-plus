@@ -100,7 +100,7 @@ export function stringToEmbeds(title: string, description: string, color: ColorR
         embeds.push(nextEmbed)
     }
 
-    if (footer != null) {
+    if (footer != null && embeds.length >= 1) {
         embeds[embeds.length - 1].footer = {text: footer}
     }
 

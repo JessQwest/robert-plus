@@ -192,6 +192,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
         return
     }
 
+    // for editing shop applications before they have been accepted
     if (splitCustomId[0] === "shop" && splitCustomId[1] === "editbyuuid") {
         // get the applicant for that specific application
         const application = lookupApplicationByUniqueIdentifier(splitCustomId[2])
@@ -207,8 +208,8 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
         return
     }
 
+    // for editing shops after the application has been accepted
     if (splitCustomId[0] === "shop" && splitCustomId[1] === "editbyid") {
-
         con.query(`SELECT * FROM shop where shopId = ?`, [splitCustomId[2]], function (err: any, result: any, fields: any) {
             if (err) {
                 const errMsg = `${NO_EMOJI} SQL Error, Jess needs to look into this (jx0051)`
@@ -222,11 +223,12 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
                     shopType,
                     xCoord,
                     zCoord,
+                    stockLevel
                 } = result[0]
 
-                console.log(`shopId: ${shopId}, shopOwner: ${shopOwner}, shopType: ${shopType}, xCoord: ${xCoord}, zCoord: ${zCoord}`)
+                console.log(`shopId: ${shopId}, shopOwner: ${shopOwner}, shopType: ${shopType}, xCoord: ${xCoord}, zCoord: ${zCoord}, stockLevel: ${stockLevel}`)
                 // Create the modal
-                const modal = createShopEditModal("id", splitCustomId[2], shopOwner, shopType, xCoord, zCoord)
+                const modal = createShopEditModal("id", splitCustomId[2], shopOwner, shopType, xCoord, zCoord, stockLevel)
                 // Show the modal to the user
                 i.showModal(modal)
                 return

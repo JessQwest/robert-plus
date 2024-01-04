@@ -18,7 +18,7 @@ export function readData(key: string): Promise<string> {
                 const dataValue = result[0]['datavalue']
                 resolve(dataValue)
             } catch (e) {
-                console.log("ERROR IN DATA (jx0024)")
+                console.log("ERROR IN DATA (jx0070)")
                 resolve("")
             }
         })

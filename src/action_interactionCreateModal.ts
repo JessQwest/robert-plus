@@ -21,6 +21,7 @@ import {
     lookupApplicationByUniqueIdentifier
 } from "./zTopic_application_creator"
 import {InProgressApplication, rebuildShopMessage} from "./zTopic_application_management"
+import {STOCK_INSTOCK, STOCK_OUTOFSTOCK, STOCK_OUTOFSTOCK7D, STOCK_SERVICE} from "./zTopic_shop_check"
 
 export async function interactionCreateModal(client: Client, i: Interaction) {
     // modal submit is only currently used for shop application edits
@@ -31,6 +32,7 @@ export async function interactionCreateModal(client: Client, i: Interaction) {
     if (splitCustomId[0] != "shop") return // right now there are no other modals
 
     let application: InProgressApplication | undefined
+    // editing shop applications before they are accepted
     if (splitCustomId[1] == "editbyuuid")  {
         application = lookupApplicationByUniqueIdentifier(splitCustomId[2])
         if (application == null) return
@@ -62,7 +64,7 @@ export async function interactionCreateModal(client: Client, i: Interaction) {
             changes += `Z coordinate changed from '${oldZCoord}' to '${shopZCoordInput}'\n`
         }
         await i.reply({ content: `Edited by ${escapeFormatting(i.user.username)}\n${changes}` })
-    } else if (splitCustomId[1] == "editbyid") {
+    } else if (splitCustomId[1] == "editbyid") { // editing shop applications after they are accepted
         console.log("editbyid")
         con.query(`SELECT * FROM shop where shopId = ?`, [splitCustomId[2]], function (err: any, result: any, fields: any) {
             if (err) {
@@ -77,7 +79,14 @@ export async function interactionCreateModal(client: Client, i: Interaction) {
                     shopType,
                     xCoord,
                     zCoord,
+                    stockLevel
                 } = result[0]
+
+                let stockNumber = ""
+                if (stockLevel == STOCK_INSTOCK) stockNumber = "1"
+                else if (stockLevel == STOCK_OUTOFSTOCK) stockNumber = "2"
+                else if (stockLevel == STOCK_OUTOFSTOCK7D) stockNumber = "3"
+                else if (stockLevel == STOCK_SERVICE) stockNumber = "4"
 
                 let changes: string = ""
 
@@ -85,6 +94,13 @@ export async function interactionCreateModal(client: Client, i: Interaction) {
                 const newShopTypeInput = i.fields.getTextInputValue(`shopType`)
                 const newShopXCoordInput = i.fields.getTextInputValue(`xCoord`)
                 const newShopZCoordInput = i.fields.getTextInputValue(`zCoord`)
+                let newStockLevelInput = i.fields.getTextInputValue(`stockLevel`)
+                if (!["1", "2", "3", "4", ""].includes(newStockLevelInput)) {
+                    changes += `Invalid value entered for stock! Stock level must be 1, 2, 3, or 4. 1:Stocked, 2:Unstocked under 7d, 3:Unstocked over 7d, 4:Service.\n`
+                    // undo the input
+                    console.log(`stockNumber: ${stockNumber}`)
+                    newStockLevelInput = stockNumber
+                }
                 console.log(`result: ${shopOwner}`)
                 if (shopOwner != newShopOwnerInput) {
                     changes += `Shop owner changed from '${escapeFormatting(shopOwner)}' to '${escapeFormatting(newShopOwnerInput)}'\n`
@@ -99,9 +115,23 @@ export async function interactionCreateModal(client: Client, i: Interaction) {
                     changes += `Z coordinate changed from '${zCoord}' to '${newShopZCoordInput}'\n`
                 }
 
+                let newStockString = stockLevel
+                if (stockNumber != newStockLevelInput) {
+                    if (newStockLevelInput == "1") newStockString = STOCK_INSTOCK
+                    else if (newStockLevelInput == "2") newStockString = STOCK_OUTOFSTOCK
+                    else if (newStockLevelInput == "3") newStockString = STOCK_OUTOFSTOCK7D
+                    else if (newStockLevelInput == "4") newStockString = STOCK_SERVICE
+                    changes += `Stock status changed from '${stockLevel}' to '${newStockString}'\n`
+                }
+
+                if (changes == "") {
+                    i.reply({ content: `No changes were made.`, ephemeral: true })
+                    return
+                }
+
                 con.query(
-                    'UPDATE shop SET shopOwner = ?, shopType = ?, xCoord = ?, zCoord = ? WHERE shopId = ?',
-                    [newShopOwnerInput, newShopTypeInput, newShopXCoordInput, newShopZCoordInput, splitCustomId[2]],
+                    'UPDATE shop SET shopOwner = ?, shopType = ?, xCoord = ?, zCoord = ?, stockLevel = ? WHERE shopId = ?',
+                    [newShopOwnerInput, newShopTypeInput, newShopXCoordInput, newShopZCoordInput, newStockString, splitCustomId[2]],
                     function (err: any, result: any, fields: any) {
                         if (err) throw err
                         console.log('Update successful')
@@ -118,7 +148,7 @@ export async function interactionCreateModal(client: Client, i: Interaction) {
 }
 
 
-export function createShopEditModal(editByType: string, id: string, shopOwner: string, shopType: string, xCoord: string, zCoord: string): Modal {
+export function createShopEditModal(editByType: string, id: string, shopOwner: string, shopType: string, xCoord: string, zCoord: string, stockLevel: string | null = null): Modal {
     // Create the modal
     const modal = new Modal()
         .setCustomId(`shop,editby${editByType},${id}`)
@@ -157,6 +187,25 @@ export function createShopEditModal(editByType: string, id: string, shopOwner: s
     const actionRow4 = new MessageActionRow().addComponents(zCoordInput)
     // @ts-ignore
     modal.addComponents(actionRow1, actionRow2, actionRow3, actionRow4)
+
+    if (stockLevel != null) {
+        let stockNumber = ""
+        if (stockLevel == STOCK_INSTOCK) stockNumber = "1"
+        else if (stockLevel == STOCK_OUTOFSTOCK) stockNumber = "2"
+        else if (stockLevel == STOCK_OUTOFSTOCK7D) stockNumber = "3"
+        else if (stockLevel == STOCK_SERVICE) stockNumber = "4"
+
+        const stockLevelInput = new TextInputComponent()
+            .setCustomId('stockLevel')
+            .setLabel("Stocked? 1:Yes 2:No(7d-) 3:No(7d+) 4:Service")
+            .setValue(stockNumber)
+            .setStyle('SHORT')
+
+        // @ts-ignore
+        const actionRow5 = new MessageActionRow().addComponents(stockLevelInput)
+        // @ts-ignore
+        modal.addComponents(actionRow5)
+    }
 
     return modal
 }
