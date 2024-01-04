@@ -2,6 +2,7 @@ import {MessageActionRow, MessageButton, MessageEmbed, TextBasedChannel, User} f
 import {escapeFormatting} from "./utility"
 import {con, YES_EMOJI} from "./index"
 import {activeApplications, rebuildShopMessage} from "./zTopic_application_management"
+import {writeData} from "./data_persistence"
 
 export const STOCK_INSTOCK = "In stock"
 export const STOCK_OUTOFSTOCK = "Out of stock (<7 days)"
@@ -165,12 +166,12 @@ function getNextShopToCheck(user: User) {
     }
     currentShopsBeingChecked.push([user.id, nextShop])
 
-    const stockLevel = nextShop.stockLevel != "" ? nextShop.stockLevel : "Never checked before"
+    const stockLevel = nextShop.stockLevel != null ? nextShop.stockLevel : "Never checked before"
 
     const shopCheckEmbed = new MessageEmbed()
         .setColor("#0cc8ce")
         .setTitle(`Shop Check`)
-        .setDescription(`<@${user.id}> please check the following shop:\n\nType: ${nextShop.shopType}\nOwner: ${nextShop.shopOwner}\nLocation: ${nextShop.xCoord}, ${nextShop.zCoord}\nStock Level at last check: ${stockLevel}`)
+        .setDescription(`<@${user.id}> please check the following shop:\n\nType: ${nextShop.shopType}\nOwner: ${nextShop.shopOwner}\nLocation: ${nextShop.xCoord}, ${nextShop.zCoord}\nStock level at last check: ${stockLevel}`)
 
     const messageActionRow = new MessageActionRow().addComponents(
         new MessageButton()
@@ -218,8 +219,11 @@ export function markShopStock(shopId: string, stockLevel: string, user: User): b
 
 function finishShopCheck() {
     shopCheckInProgress = false
+    const shopCheckFooter = `Shop check last updated at ${new Date().toLocaleString()} by ${usersInShopCheck.map(user => user.username).join(", ")}`
+    writeData("shopCheckInfo", shopCheckFooter)
     usersInShopCheck = []
     shopCheckChannel.send(`${YES_EMOJI} Shop check complete`)
+    rebuildShopMessage()
 }
 
 export function isShopCheckInProgress() {

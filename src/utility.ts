@@ -83,7 +83,7 @@ export function jaccardIndex(str1: string, str2: string): number {
     return intersectionSize / unionSize
 }
 
-export function stringToEmbeds(title: string, description: string, color: ColorResolvable = "#208386"): DiscordJS.MessageEmbed[] {
+export function stringToEmbeds(title: string, description: string, color: ColorResolvable = "#208386", footer: string | null = null): DiscordJS.MessageEmbed[] {
     const embeds: DiscordJS.MessageEmbed[] = []
     const lines = groupLines(description)
     let setTitle = false
@@ -99,6 +99,11 @@ export function stringToEmbeds(title: string, description: string, color: ColorR
 
         embeds.push(nextEmbed)
     }
+
+    if (footer != null) {
+        embeds[embeds.length - 1].footer = {text: footer}
+    }
+
     return embeds
 }
 

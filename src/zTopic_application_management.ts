@@ -43,6 +43,7 @@ import {
     VISIBILITY_REVIEW_ONLY
 } from "./zTopic_application_creator"
 import {STOCK_INSTOCK, STOCK_OUTOFSTOCK, STOCK_OUTOFSTOCK7D, STOCK_SERVICE} from "./zTopic_shop_check"
+import {readData} from "./data_persistence"
 
 export const applicationStatusDictionary: Record<string, string> = {
     'accept': 'Application Accepted',
@@ -287,8 +288,11 @@ export async function rebuildShopMessage() {
                 // Format the information and concatenate to the result string
                 concatenatedText += `${shopIndicator}${record.shopType} (${escapeFormatting(record.shopOwner)}) X:${record.xCoord}, Z:${record.zCoord}\n`
             })
-            let embeds = stringToEmbeds("Shop Locations", concatenatedText)
-            shopMessage.edit({content: " ", embeds: embeds})
+            readData("shopCheckInfo").then(footer => {
+                let embeds = stringToEmbeds("Shop Locations", concatenatedText, "#208386", footer)
+                shopMessage.edit({content: " ", embeds: embeds})
+            })
+
         }
     )
 }
