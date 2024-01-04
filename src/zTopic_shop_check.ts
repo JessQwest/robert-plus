@@ -179,11 +179,11 @@ function getNextShopToCheck(user: User) {
             .setStyle('SUCCESS'),
         new MessageButton()
             .setCustomId(`shopcheck,stock,outofstock,${nextShop.shopId},${user.id}`)
-            .setLabel(`Out of stock (<7 days)`)
+            .setLabel(`Out of stock (under 7 days)`)
             .setStyle('DANGER'),
         new MessageButton()
             .setCustomId(`shopcheck,stock,outofstock7d,${nextShop.shopId},${user.id}`)
-            .setLabel(`Out of stock (>7 days)`)
+            .setLabel(`Out of stock (over 7 days)`)
             .setStyle('DANGER'),
         new MessageButton()
             .setCustomId(`shopcheck,stock,service,${nextShop.shopId},${user.id}`)

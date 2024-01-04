@@ -30,4 +30,9 @@ export function setupDatabaseTables() {
         if (err) throw err
         console.log(`shop table created if not exists`)
     })
+
+    con.query('CREATE TABLE IF NOT EXISTS `data` (`datakey` VARCHAR(30) NOT NULL, `datavalue` VARCHAR(4000) NOT NULL, PRIMARY KEY (`datakey`))', function (err: any, result: any, fields: any) {
+        if (err) throw err
+        console.log(`data table created if not exists`)
+    })
 }
