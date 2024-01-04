@@ -123,7 +123,7 @@ export async function debug_messageCreate(message: DiscordJS.Message) {
     }
 
     // if replying to an application with an question mark, pull the history
-    if (message.content.at(0) == "?" && (message.author.id == "252818596777033729" || message.channelId == "805296027241676820")) {
+    if (message.content.at(0) == "?" && message.content.length > 3 && (message.author.id == "252818596777033729" || message.channelId == "805296027241676820")) {
         if (message.channel instanceof TextChannel) await postApplicationHistory(message.channel, message.content.slice(1), message.content.slice(1))
     }
 }

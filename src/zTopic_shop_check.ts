@@ -166,7 +166,7 @@ function getNextShopToCheck(user: User) {
     }
     currentShopsBeingChecked.push([user.id, nextShop])
 
-    const stockLevel = nextShop.stockLevel != null ? nextShop.stockLevel : "Never checked before"
+    const stockLevel = nextShop.stockLevel != null && nextShop.stockLevel != "" ? nextShop.stockLevel : "No record"
 
     const shopCheckEmbed = new MessageEmbed()
         .setColor("#0cc8ce")

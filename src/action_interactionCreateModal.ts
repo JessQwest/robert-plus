@@ -121,6 +121,7 @@ export async function interactionCreateModal(client: Client, i: Interaction) {
                     else if (newStockLevelInput == "2") newStockString = STOCK_OUTOFSTOCK
                     else if (newStockLevelInput == "3") newStockString = STOCK_OUTOFSTOCK7D
                     else if (newStockLevelInput == "4") newStockString = STOCK_SERVICE
+                    else if (newStockLevelInput == "") newStockString = ""
                     changes += `Stock status changed from '${stockLevel}' to '${newStockString}'\n`
                 }
 

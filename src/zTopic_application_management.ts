@@ -416,7 +416,6 @@ export async function changeApplicationIGN(message: DiscordJS.Message) {
 
 export function checkApplicationHistory(dcUserId: string, mcUsername = ''): Promise<MessageEmbed[]> {
     return new Promise(async (resolve, reject) => {
-        let returnMessage: MessageEmbed[] = []
         let answerString = ''
         let mcUuid: string
         if (mcUsername == '') {
@@ -424,6 +423,10 @@ export function checkApplicationHistory(dcUserId: string, mcUsername = ''): Prom
         } else mcUuid = await nameToUuid(mcUsername)
 
         const oneMinuteAgo = Date.now() - 60 * 1000
+
+        if (dcUserId == null || dcUserId == "") dcUserId = "N/A"
+        if (mcUsername == null || mcUsername == "") mcUsername = "N/A"
+        if (mcUuid == null || mcUuid == "") mcUuid = "N/A"
 
         console.log(`SELECT * FROM applicationhistory WHERE dcUserId = '${dcUserId}' or mcUsername = '${mcUsername}' or mcUuid = '${mcUuid}'`)
         con.query(
@@ -474,21 +477,15 @@ export function checkApplicationHistory(dcUserId: string, mcUsername = ''): Prom
                         sharingString += 'Minecraft username'
                     }
 
-                    // if the amount of text in a 4096 character embed is about to be maxxed
-                    if (answerString.length > 3500) {
-                        returnMessage.push(new MessageEmbed().setDescription(answerString))
-                        answerString = ""
-                    }
-
                     if (typeof status === 'string') status = applicationStatusDictionary[status]
 
                     let applicationSuccessString = status == null || status == "unknown" ? "" : `. Application status: ${status}.`
                     answerString += `The same ${sharingString} detected <t:${messageTimestamp}:R> on <t:${messageTimestamp}:f> ${messageURL}${applicationSuccessString}\n`
                 }
-
-                if (answerString.length >= 1) returnMessage.push(new MessageEmbed().setDescription(answerString))
-                if (username != "" && returnMessage.length >= 1) returnMessage.at(0)?.setTitle(`Player username: ${escapeFormatting(username.toString())}`)
-                resolve(returnMessage)
+                let embedTitle = "Player Application History"
+                if (username != "" && verifyUsernameInput(username)) embedTitle += `: ${escapeFormatting(username.toString())}`
+                const embeds = stringToEmbeds(embedTitle, answerString)
+                resolve(embeds)
             }
         )
     })

@@ -241,4 +241,6 @@ console.error = function (...args) {
     originalError.apply(console, args)
 }
 
-client.login(process.env.TOKEN)
+client.login(process.env.TOKEN).then(() => {
+    console.log("Logged in using token successfully!")
+})
