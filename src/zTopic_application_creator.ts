@@ -380,6 +380,9 @@ export async function buttonPostApplication(user: DiscordJS.User) {
         return
     }
 
+    playerApplication.applicationStatus = "active"
+
+
     if (!playerApplication.answers.every(element => !!element)) {
         await user.send(`You have not completed your application yet.`)
         return
@@ -414,7 +417,6 @@ export async function buttonPostApplication(user: DiscordJS.User) {
     playerApplication.submittedTimestamp = Date.now()
     await processNewApplication(playerApplication)
 
-    playerApplication.applicationStatus = "active"
     await user.send(`Your answers have been submitted.`)
 
     console.info("APPLICATION SUBMITTED")

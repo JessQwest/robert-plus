@@ -116,8 +116,9 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
             await i.deferUpdate()
         }
         else if (splitCustomId[1] === "submit") {
-            await buttonPostApplication(i.user)
-            await i.deferUpdate()
+            buttonPostApplication(i.user)
+            i.deferUpdate()
+            return
         }
         else if (splitCustomId[1] === "cancel") {
             await buttonCancelApplication(i.user)
