@@ -19,6 +19,7 @@ import {guildMemberRemove} from "./action_guildMemberRemove"
 import {guildMemberUpdate} from "./action_guildMemberUpdate"
 import {messageCreate} from "./action_messageCreate"
 import {messageDelete} from "./action_messageDelete"
+import {loadPlayerNames} from "./zTopic_coreprotect"
 
 
 export var DEBUGMODE = config.get('debug-mode.enabled')
@@ -113,6 +114,12 @@ const lpUser = config.get('database.lpuser')
 const lpPassword = config.get('database.lppassword')
 const lpDatabase = config.get('database.lpdatabase')
 
+const cpHost = config.get('database.cphost')
+const cpPort = config.get('database.cpport')
+const cpUser = config.get('database.cpuser')
+const cpPassword = config.get('database.cppassword')
+const cpDatabase = config.get('database.cpdatabase')
+
 console.log(`Attempting to create SQL connection to db ${dbDatabase} with ${dbHost}:${dbPort} ${dbUser}/${dbPassword}`)
 export const con = mysql.createPool({
     host: dbHost,
@@ -131,6 +138,15 @@ export const lpcon = mysql.createPool({
     database: lpDatabase
 })
 
+console.log(`Attempting to create SQL connection to coreprotect db ${cpDatabase} with ${cpHost}:${cpPort} ${cpUser}/${cpPassword}`)
+export const cpcon = mysql.createPool({
+    host: cpHost,
+    port: cpPort,
+    user: cpUser,
+    password: cpPassword,
+    database: cpDatabase
+})
+
 export var debugchannel : TextBasedChannel
 
 client.on('ready', async () =>{
@@ -145,6 +161,9 @@ client.on('ready', async () =>{
     }
 
     debugchannel = await client.channels.fetch(BOT_LOG_CHANNEL_ID) as TextBasedChannel
+
+    // load the core protect player name list for future lookups
+    loadPlayerNames()
 
     console.info(`The bot is ready ${new Date().toISOString()}`)
 

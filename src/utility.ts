@@ -128,3 +128,9 @@ function groupLines(inputString: string): string[] {
 
     return groupedLines
 }
+
+export function hasAdminPerms(userId: string | null | undefined): boolean {
+    if (userId == null) return false
+    const isAdmin = ["252818596777033729", "699331874408890378", "616751114355736785", "284664965686624256", "346501391931408384"].includes(userId)
+    return isAdmin
+}

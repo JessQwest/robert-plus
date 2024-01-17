@@ -136,6 +136,13 @@ database:
   lppassword: ''
   lpdatabase: ''
 
+  # The database that is being used by coreprotect
+  cphost: ''
+  cpport: ''
+  cpuser: ''
+  cppassword: ''
+  cpdatabase: ''
+
 debug-mode:
   # Useful for testing with a non production database
   enabled: false

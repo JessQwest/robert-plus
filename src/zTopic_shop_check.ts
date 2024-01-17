@@ -116,7 +116,7 @@ export function cancelShopCheck() {
 async function buildShopListToCheck(): Promise<void> {
     return new Promise((resolve, reject) => {
         con.query(
-            `SELECT * FROM shop WHERE shopType != '${STOCK_SERVICE}'`,
+            `SELECT * FROM shop WHERE stockLevel != '${STOCK_SERVICE}'`,
             function (err: Error | null, result: any[]) {
                 if (err) {
                     console.error(err)
@@ -219,7 +219,7 @@ export function markShopStock(shopId: string, stockLevel: string, user: User): b
 
 function finishShopCheck() {
     shopCheckInProgress = false
-    const shopCheckFooter = `Shop check last updated at ${new Date().toLocaleString()} by ${usersInShopCheck.map(user => user.username).join(", ")}`
+    const shopCheckFooter = `Shop check last completed: <t:${Math.floor(new Date().getTime() / 1000)}:f> by ${usersInShopCheck.map(user => user.username).join(", ")}`
     writeData("shopCheckInfo", shopCheckFooter)
     usersInShopCheck = []
     shopCheckChannel.send(`${YES_EMOJI} Shop check complete`)

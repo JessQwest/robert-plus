@@ -210,3 +210,24 @@ export function createShopEditModal(editByType: string, id: string, shopOwner: s
 
     return modal
 }
+
+export function createCoreProtectModal(): Modal {
+    // Create the modal
+    const modal = new Modal()
+        .setCustomId(`coreprotect`)
+        .setTitle(`Go to page`)
+    // Add components to modal
+    // Create the text input components
+    const pageNumberInput = new TextInputComponent()
+        .setCustomId('pagenumber')
+        .setLabel("Enter page number:")
+        .setStyle('SHORT')
+    // An action row only holds one text input,
+    // so you need one action row per text input.
+    // @ts-ignore
+    const actionRow1 = new MessageActionRow().addComponents(pageNumberInput)
+    // @ts-ignore
+    modal.addComponents(actionRow1)
+
+    return modal
+}

@@ -48,7 +48,7 @@ import {
 } from "./zTopic_application_creator"
 import {manageUserRole} from "./zTopic_role_manager"
 import {messageAndKick} from "./action_interactionCreateCommand"
-import {createShopEditModal} from "./action_interactionCreateModal"
+import {createCoreProtectModal, createShopEditModal} from "./action_interactionCreateModal"
 import {
     cancelShopCheck, isShopCheckInProgress,
     joinShopCheck,
@@ -58,6 +58,7 @@ import {
     STOCK_OUTOFSTOCK7D,
     STOCK_SERVICE
 } from "./zTopic_shop_check"
+import {coreProtectLookup} from "./zTopic_coreprotect"
 
 export var buttonIDSet : Set<string> = new Set
 export async function interactionCreateButton(client: Client, i: Interaction) {
@@ -182,6 +183,20 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
                 const reply = await getConfirmationButton(i.component)
                 i.reply(reply)
             }
+        }
+        return
+    }
+
+    if (splitCustomId[0] === "coreprotect") {
+        await i.deferUpdate()
+        if (splitCustomId[1] === "custom") {
+            let modal = createCoreProtectModal()
+            // Show the modal to the user
+            await i.showModal(modal)
+        } else {
+            let offset: number = parseInt(splitCustomId[1])
+            console.log(`Offset: ${offset}`)
+            await coreProtectLookup(splitCustomId[2], i.channel, offset)
         }
         return
     }
