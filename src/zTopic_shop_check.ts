@@ -116,7 +116,7 @@ export function cancelShopCheck() {
 async function buildShopListToCheck(): Promise<void> {
     return new Promise((resolve, reject) => {
         con.query(
-            `SELECT * FROM shop WHERE stockLevel != '${STOCK_SERVICE}'`,
+            `SELECT * FROM shop WHERE stockLevel != '${STOCK_SERVICE}' OR stockLevel IS NULL`,
             function (err: Error | null, result: any[]) {
                 if (err) {
                     console.error(err)
@@ -219,7 +219,22 @@ export function markShopStock(shopId: string, stockLevel: string, user: User): b
 
 function finishShopCheck() {
     shopCheckInProgress = false
-    const shopCheckFooter = `Shop check last completed: <t:${Math.floor(new Date().getTime() / 1000)}:f> by ${usersInShopCheck.map(user => user.username).join(", ")}`
+
+    const currentDate = new Date()
+
+    const options: Intl.DateTimeFormatOptions = {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: true,
+        timeZone: 'GMT'
+    }
+
+    const formattedDate = new Intl.DateTimeFormat('en-US', options).format(currentDate)
+
+    const shopCheckFooter = `Shop check last completed: ${formattedDate} GMT by ${usersInShopCheck.map(user => user.username).join(", ")}`
     writeData("shopCheckInfo", shopCheckFooter)
     usersInShopCheck = []
     shopCheckChannel.send(`${YES_EMOJI} Shop check complete`)

@@ -475,6 +475,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
                     const errorMessage = `${NO_EMOJI} SQL Error 2, Jess needs to look into this (jx0050)`
                     i.channel?.send(errorMessage)
                     console.error(`${errorMessage}: ${err}`)
+                    return
                 }
                 i.channel?.send(`The shop request has been accepted`)
                 i.update({ content: `The shop request for ${application.answers[0]} was accepted by ${b.user.username}`, components: [] })

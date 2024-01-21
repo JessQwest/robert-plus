@@ -29,7 +29,7 @@ export async function interactionCreateModal(client: Client, i: Interaction) {
     console.log(`Received modal submit ${i.customId}`)
     const customId = i.customId
     const splitCustomId = customId.split(",")
-    if (splitCustomId[0] != "shop") return // right now there are no other modals
+    if (splitCustomId[0] != "shop") return
 
     let application: InProgressApplication | undefined
     // editing shop applications before they are accepted
@@ -150,10 +150,22 @@ export async function interactionCreateModal(client: Client, i: Interaction) {
 
 
 export function createShopEditModal(editByType: string, id: string, shopOwner: string, shopType: string, xCoord: string, zCoord: string, stockLevel: string | null = null): Modal {
+    // reduce all inputs to 45 characters max to fit in the modal
+    let modelTitle = `Edit application: ${shopOwner}`.slice(0,45)
+
+    shopOwner = shopOwner.slice(0,45)
+    shopType = shopType.slice(0,45)
+    xCoord = xCoord.slice(0,45)
+    zCoord = zCoord.slice(0,45)
+    if (stockLevel != null) stockLevel = stockLevel.slice(0,45)
+
+
+    console.log(`createShopEditModal called with ${editByType}, ${id}, ${shopOwner}, ${shopType}, ${xCoord}, ${zCoord}, ${stockLevel}`)
+
     // Create the modal
     const modal = new Modal()
         .setCustomId(`shop,editby${editByType},${id}`)
-        .setTitle(`Edit application: ${shopOwner}`)
+        .setTitle(modelTitle)
     // Add components to modal
     // Create the text input components
     const shopOwnerInput = new TextInputComponent()
@@ -189,7 +201,8 @@ export function createShopEditModal(editByType: string, id: string, shopOwner: s
     // @ts-ignore
     modal.addComponents(actionRow1, actionRow2, actionRow3, actionRow4)
 
-    if (stockLevel != null) {
+    // if editing a shop that already exists then add the stock level input
+    if (editByType == "id") {
         let stockNumber = ""
         if (stockLevel == STOCK_INSTOCK) stockNumber = "1"
         else if (stockLevel == STOCK_OUTOFSTOCK) stockNumber = "2"
