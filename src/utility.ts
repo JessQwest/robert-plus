@@ -134,3 +134,15 @@ export function hasAdminPerms(userId: string | null | undefined): boolean {
     const isAdmin = ["252818596777033729", "699331874408890378", "616751114355736785", "284664965686624256", "346501391931408384"].includes(userId)
     return isAdmin
 }
+
+export function formatListOfStrings(strings: string[]): string {
+    if (strings.length === 0) {
+        return '';
+    } else if (strings.length === 1) {
+        return strings[0];
+    } else {
+        const allButLast = strings.slice(0, -1).join(', ')
+        const last = strings[strings.length - 1]
+        return `${allButLast} and ${last}`
+    }
+}

@@ -1,5 +1,5 @@
 import {MessageActionRow, MessageButton, MessageEmbed, TextBasedChannel, User} from "discord.js"
-import {escapeFormatting} from "./utility"
+import {escapeFormatting, formatListOfStrings} from "./utility"
 import {con, YES_EMOJI} from "./index"
 import {activeApplications, rebuildShopMessage} from "./zTopic_application_management"
 import {writeData} from "./data_persistence"
@@ -234,7 +234,7 @@ function finishShopCheck() {
 
     const formattedDate = new Intl.DateTimeFormat('en-US', options).format(currentDate)
 
-    const shopCheckFooter = `Shop check last completed: ${formattedDate} GMT by ${usersInShopCheck.map(user => user.username).join(", ")}`
+    const shopCheckFooter = `Shop check last completed: ${formattedDate} GMT by ${formatListOfStrings(usersInShopCheck.map(user => user.username))}`
     writeData("shopCheckInfo", shopCheckFooter)
     usersInShopCheck = []
     shopCheckChannel.send(`${YES_EMOJI} Shop check complete`)

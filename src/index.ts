@@ -213,7 +213,7 @@ cron.schedule('0 7 * * *', async () => { // 0 7 * * * for every 7am or * * * * *
 })
 
 // sleepy time every day at 7am
-cron.schedule('0,5,10,15,20,25,30 6 * * *', async () => {
+cron.schedule('0 7 * * *', async () => {
     await scheduled_jobs.sleepyTime()
 })
 

@@ -9,7 +9,7 @@ import {
 } from "discord.js"
 import {
     countCharacterChanges,
-    escapeFormatting,
+    escapeFormatting, formatListOfStrings,
     getDiscordDisplayName,
     jaccardIndex,
     verifyUsernameInput
@@ -28,7 +28,7 @@ import {
 
 // @ts-ignore
 import { v4 as uuidv4 } from 'uuid'
-import {nameToUuid} from "./api"
+import {nameToUuid, uuidToUsername} from "./api"
 import {createRoleButton} from "./zTopic_role_manager"
 import {startShopCheck} from "./zTopic_shop_check"
 
@@ -126,24 +126,25 @@ export async function interactionCreateCommand(client: Client, i: Interaction) {
     }
 
     if (commandName === "getminecraftname") {
-        await i.deferReply({ephemeral: true})
-        try{
-            await con.query(`SELECT minecraftUuid FROM accountLinking WHERE discordId = '` + options.getUser("discordusername") + "'", async function (err: any, result: any, fields: any) {
-                console.log(`getminecraftname called for user ${options.getUser("discordusername")} - result of name lookup: ${result[0]['minecraftUuid']}`)
-                const mcUuid = result[0]['minecraftUuid']
-                const lookupUrl = 'https://sessionserver.mojang.com/session/minecraft/profile/' + mcUuid
-                console.log(`getminecraftname API call to ${lookupUrl}`)
-                const {id, name} = await fetch(lookupUrl).then((response: { json: () => any }) => response.json())
-                console.log(name)
-                await i.editReply(`Minecraft name: ${name}`)
+        await i.deferReply({ ephemeral: true })
+        try {
+            let discordUser = options.getUser("discordusername") as DiscordJS.User
+            await con.query(`SELECT minecraftUuid FROM accountLinking WHERE discordId = '` + discordUser + "'", async function (err: any, result: any, fields: any) {
+                console.log(`getminecraftname called for user ${options.getUser("discordusername")} - result of name lookup: ${result.map((row: any) => row['minecraftUuid']).join(', ')}`)
+
+                const mcUuids = result.map((row: any) => row['minecraftUuid']);
+                const names = await Promise.all(mcUuids.map(async (mcUuid: string) => await uuidToUsername(mcUuid)));
+
+                await i.editReply(`${discordUser} is known on Minecraft by the ${names.length > 1 ? 'names' : 'name'}: ${escapeFormatting(formatListOfStrings(names))}`)
             })
         }
         catch (e) {
-            await i.editReply("Failed to get Minecraft name")
-            console.log(e)
-            return
+            await i.editReply("Failed to get Minecraft names");
+            console.log(e);
         }
+        return;
     }
+
 
     if (commandName === "nametouuid") {
         const username = options.getString("username")
@@ -228,6 +229,8 @@ export async function interactionCreateCommand(client: Client, i: Interaction) {
         const success = await timeoutUser(targetedGuildMember, hours,`${targetedGuildMember.nickname} has been timed out by ${i.user.username} for ${hours} hours.`)
         if (success) {
             i.reply(`${targetedGuildMember.nickname} has been timed out by ${i.user.username} for ${hours} hours.`)
+        } else {
+            i.reply(`I am unable to time out ${targetedGuildMember.nickname}. Please make sure the permissions are ok and that the timeout duration is between 1 and 672 hours (4 weeks)`)
         }
         return
     }
@@ -597,6 +600,9 @@ export function messageAndKick(interaction: Interaction, kickedMcUsername: Strin
 
 async function timeoutUser(member: GuildMember, durationHours: number, reason: string) {
     try {
+        if (durationHours > 672 || durationHours < 1) {
+            return false
+        }
         await member.timeout(durationHours * 60 * 60 * 1000, reason)
         console.log("timed out " + member.user.username)
         return true

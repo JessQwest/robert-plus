@@ -8,7 +8,7 @@ import {debug_messageCreate} from "./debug"
 import {easter_egg_messageCreate} from "./easter_egg"
 import {changeApplicationIGN} from "./zTopic_application_management"
 import {dmReceived, QUESTION_SET_MAP, QUESTION_SET_SHOP} from "./zTopic_application_creator"
-import {hasAdminPerms} from "./utility"
+import {escapeFormatting, hasAdminPerms} from "./utility"
 import {coreProtectLookup} from "./zTopic_coreprotect"
 
 
@@ -45,7 +45,7 @@ export async function messageCreate(client: Client, message: DiscordJS.Message) 
     // if message is generateapplicationbutton then create an embed with the button
     if (message.content === "gab" || message.content == "generateapplicationbutton") {
         let applicationEmbed = new MessageEmbed()
-            .setDescription("Click here to start an application!")
+            .setDescription("Welcome to the application server! Press the button to start an application!")
             .setColor(`#10e083`)
         const startApplicationButton = new MessageActionRow()
             .addComponents(
@@ -100,7 +100,8 @@ async function postRobertMessage(client: DiscordJS.Client, message: DiscordJS.Me
         }
         let messageContent = message.content.replace(`<@${ROBERT_USER_ID}>`,"@Robert")
         messageContent = messageContent.replace("@everyone","@ everyone")
-        await messagesToRobert.send(message.author.username + ": " + messageContent + "")
+        messageContent = message.author.username + ": " + messageContent + ""
+        await messagesToRobert.send(escapeFormatting(messageContent))
         for (const attatchment of message.attachments) {
             await messagesToRobert.send(message.author.username + " attached " + attatchment[1].name + ": " + attatchment[1].url)
         }
