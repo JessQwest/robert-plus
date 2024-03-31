@@ -10,10 +10,11 @@ import {
 import {Client, GuildMember, PartialGuildMember, Role, TextChannel} from "discord.js"
 import {discordIdToMinecraftUuid} from "./api"
 
-// ranks - [discordRoleId, nameOfRank, allowsColorChange]
+// ranks - [discordRoleId, nameOfRank, allowsColorChange, canDuplicate]
+// canDuplicate determines if this role can be given out in addition to a non-duplicate role
 // note that netherite rank is there twice, once for standard netherite and once for netherite giftee
-const ranks = [["718434756496326657", "gold", 0], ["720848078264991765", "emerald", 0], ["710713981186211870", "diamond", 1], ["804897967374860288", "netherite", 1], ["1076240598232739854", "netherite", 1], ["801826957041860638", "birthday", 0]]
-const colors = [
+export const ranks = [["718434756496326657", "gold", 0, 0], ["720848078264991765", "emerald", 0, 0], ["710713981186211870", "diamond", 1, 0], ["804897967374860288", "netherite", 1, 1], ["1076240598232739854", "netherite", 1, 1], ["801826957041860638", "birthday", 0, 1]]
+export const colors = [
     "905473389592993882",
     "905475025786785822",
     "905474168043208725",

@@ -31,6 +31,7 @@ export const SERVER_NAME = config.get('server-info.server-name')
 export const SERVER_APPLICATION_URL = config.get('server-info.server-application-url')
 export const RULE_PHRASE_EMOJI: string = config.get('rule-checking.rule-phrase-emoji')
 export const RULE_PHRASE_TEXT: string = config.get('rule-checking.rule-phrase-text')
+export const RULE_MINIMUM_AGE: string = config.get('rule-checking.rule-minimum-age')
 export const RULE_MATCH_STRINGS: String[] = config.get('rule-checking.rule-match-key-phrases')
 
 // emoji constants

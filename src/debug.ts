@@ -1,4 +1,4 @@
-import {client, con, DEBUG_CHANNEL_ID, SERVER_NAME} from "./index"
+import {client, con, DEBUG_CHANNEL_ID, DEBUGMODE} from "./index"
 import {containsRulePhrase, getDiscordDisplayName, unescapeFormatting, verifyUsernameInput} from "./utility"
 import {MessageEmbed, TextChannel} from "discord.js"
 import * as DiscordJS from "discord.js"
@@ -104,13 +104,17 @@ export async function debug_messageCreate(message: DiscordJS.Message) {
     }
 
     if (message.content === "wl" && message.author.id === "252818596777033729" && message.channelId === DEBUG_CHANNEL_ID) {
+        if (!DEBUGMODE) {
+            await message.reply("DEBUG MODE IS NOT ENABLED! You don't want to send this as an official application!")
+            return
+        }
         message.channel.send("WL TRIGGER")
         const application = new InProgressApplication(`252818596777033729`, `jess.qwest`,`applicationquestions`)
-        application.uniqueIdentifier = "JessQwest"
+        application.uniqueIdentifier = "_Lemonadee_"
         application.answers = [
-            "JessQwest",
-            "10",
-            "my friends are in it :D",
+            "_pizza_",
+            "16",
+            "THIS IS A JESS TEST APPLICATION! my friends are in it :D",
             "having fun :>",
             "video gaming B)",
             "n/a",

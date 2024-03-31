@@ -26,7 +26,7 @@ import {
     APPLICATION_VOTING_CHANNEL_ID,
     client,
     con,
-    NO_EMOJI,
+    NO_EMOJI, RULE_MINIMUM_AGE,
     RULE_PHRASE_EMOJI,
     RULE_PHRASE_TEXT,
     SHOP_NOSTOCK_7DAY_EMOJI,
@@ -99,6 +99,15 @@ export class InProgressApplication {
         let fullAnswers = this.answers.join()
         return containsRulePhrase(fullAnswers)
     }
+
+    getAnswerByShortIdentifier(shortIdentifier: string): string | undefined {
+        const questionSet = this.getQuestionSet()
+        const questionIndex = questionSet.findIndex(item => item[3] === shortIdentifier)
+        if (questionIndex == -1) {
+            return undefined
+        }
+        return this.answers[questionIndex]
+    }
 }
 
 export async function processNewApplication(application: InProgressApplication) {
@@ -156,7 +165,7 @@ export async function processNewApplication(application: InProgressApplication) 
             applicationReviewDescription += `${questionShortText}: ${escapeFormatting(applicantAnswer)}\n`
         }
         if (visibility == VISIBILITY_NOTIFICATION_ONLY || visibility == VISIBILITY_ALL || visibility == VISIBILITY_ALL_UNIQUE_IDENTIFIER) {
-            applicationNotificationDescription += `${questionShortText}: ${applicantAnswer}\n`
+            applicationNotificationDescription += `${questionShortText}: ${escapeFormatting(applicantAnswer)}\n`
         }
     }
 
@@ -186,6 +195,7 @@ export async function processNewApplication(application: InProgressApplication) 
         .setColor("#bdbc4b")
         .setTitle("New Application - Please vote")
         .setDescription(applicationReviewDescription)
+        .setURL(application.applicationMessageUrl)
 
     // prepare application summary
     if (applicationChannel == null || !(applicationChannel instanceof TextChannel)) {
@@ -236,12 +246,16 @@ export async function processNewApplication(application: InProgressApplication) 
     // specific for main application
     if (application.questionSet == QUESTION_SET_APPLICATION && applicationChannel != null && applicationChannel instanceof TextChannel) {
         // check if Mojang recognizes the username or if its spelt correctly
-        let usernameValid: Boolean = await usernameCheck(application.uniqueIdentifier, applicationChannel)
+        let usernameValid: Boolean = await usernameCheck(unescapeFormatting(application.uniqueIdentifier), applicationChannel)
         if (!usernameValid && !verifyUsernameInput(application.uniqueIdentifier)) {
             await applicationChannel.send("This IGN doesnt look quite right. Reply to the application message with !(ign) if it is wrong")
         }
 
-        if (!application.checkForRulePhrase()) {
+        const age: string | undefined = application.getAnswerByShortIdentifier("Age")
+
+        if (age != undefined && parseInt(age) < parseInt(RULE_MINIMUM_AGE)) {
+            applicationChannel.send(`:warning: This applicant appears to be under the minimum age of ${RULE_MINIMUM_AGE} :warning:`)
+        } else if (!application.checkForRulePhrase()) {
             postRuleRejectButtons(application.uniqueIdentifier, application.discordId, applicationTextChannel, application.applicationMessageId)
         }
 

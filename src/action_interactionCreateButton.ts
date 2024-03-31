@@ -181,7 +181,6 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
                     return
                 }
                 const reply = await getConfirmationButton(i.component)
-                i.reply(reply)
             }
         }
         return
@@ -344,6 +343,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
                     i.reply({content: `Could not find the shop, it might have already been deleted.`, ephemeral: true})
                 }
             })
+            await i.deferUpdate()
         } else {
             // if not a confirmation button, post one if such a record exists
             con.query(`SELECT * FROM shop where shopId = ?`, [splitCustomId[2]], function (err: any, result: any, fields: any) {
@@ -352,7 +352,7 @@ export async function interactionCreateButton(client: Client, i: Interaction) {
                     console.error(errMsg, err)
                     return
                 }
-                if (result.length > 0) {
+                if (result.length == 0) {
                     i.reply({content: `This shop does not appear to exist!`, ephemeral: true})
                     return
                 }

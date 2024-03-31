@@ -73,6 +73,9 @@ rule-checking:
   # The primary word to describe
   rule-phrase-text: 'duck'
 
+  # Generally the minimum age required to join the server
+  rule-minimum-age: 16
+
   # An emoji that describes the primary word
   rule-phrase-emoji: '🦆'
 

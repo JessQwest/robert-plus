@@ -175,7 +175,7 @@ export async function dmReceived(messageContent: string, messageAuthor: DiscordJ
         return
     }
 
-    currentApplication.answers[currentApplication.currentQuestionNo] = messageContent
+    currentApplication.answers[currentApplication.currentQuestionNo] = unescapeFormatting(messageContent)
     currentApplication.currentQuestionNo ++
 
     if (currentApplication.currentQuestionNo >= currentApplication.getQuestionSet().length) {
@@ -391,7 +391,7 @@ export async function buttonPostApplication(user: DiscordJS.User) {
     let application = ""
 
     for (let i = 0; i < playerApplication.getQuestionSet().length; i++) {
-        application += `${playerApplication.getQuestionSet()[i][0]}:\n${playerApplication.answers[i]}\n\n`
+        application += `${playerApplication.getQuestionSet()[i][0]}:\n${escapeFormatting(playerApplication.answers[i])}\n\n`
     }
 
     let finalApplicationEmbed = new MessageEmbed()

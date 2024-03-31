@@ -135,6 +135,11 @@ export async function interactionCreateCommand(client: Client, i: Interaction) {
                 const mcUuids = result.map((row: any) => row['minecraftUuid']);
                 const names = await Promise.all(mcUuids.map(async (mcUuid: string) => await uuidToUsername(mcUuid)));
 
+                if (names.length == 0) {
+                    await i.editReply(`${discordUser} does not have a registered account!`)
+                    return
+                }
+
                 await i.editReply(`${discordUser} is known on Minecraft by the ${names.length > 1 ? 'names' : 'name'}: ${escapeFormatting(formatListOfStrings(names))}`)
             })
         }
@@ -424,7 +429,7 @@ export async function interactionCreateCommand(client: Client, i: Interaction) {
                 if(result.length >= 1) {
                     const whitelistedEmbed = new MessageEmbed()
                         .setColor("#1fe125")
-                        .setTitle(result[0]["name"] + " is on the whitelist")
+                        .setTitle(escapeFormatting(result[0]["name"]) + " is on the whitelist")
                     i.editReply({embeds: [whitelistedEmbed]})
                     return
                 }

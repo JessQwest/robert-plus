@@ -45,7 +45,7 @@ export async function usernameCheck(username: string, textChannel: DiscordJS.Tex
                     const errorEmbed = new MessageEmbed()
                         .setColor("#f5bc06")
                         .setTitle("Minecraft Username Check Failed")
-                        .setDescription(`⚠️ ${data.errorMessage} ⚠️`)
+                        .setDescription(`⚠️ ${data.errorMessage}. Please manually check with NameMC if this name exists. ⚠️`)
                     if (textChannel != undefined) await textChannel.send({embeds: [errorEmbed]})
                     resolve(false)
                 } else {

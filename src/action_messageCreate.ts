@@ -10,6 +10,7 @@ import {changeApplicationIGN} from "./zTopic_application_management"
 import {dmReceived, QUESTION_SET_MAP, QUESTION_SET_SHOP} from "./zTopic_application_creator"
 import {escapeFormatting, hasAdminPerms} from "./utility"
 import {coreProtectLookup} from "./zTopic_coreprotect"
+import {generatePlayerReport} from "./zTopic_player_reports"
 
 
 export async function messageCreate(client: Client, message: DiscordJS.Message) {
@@ -29,6 +30,12 @@ export async function messageCreate(client: Client, message: DiscordJS.Message) 
         return
     }
 
+    // generate player report
+    if (message.content.startsWith("generateplayerreport") && hasAdminPerms(message.member?.id)) {
+        await generatePlayerReport(message.channel)
+        return
+    }
+
     // if replying to an application with an exclamation mark, attempt to change the ign
     if (message.reference != null && message.reference.messageId != null && message.content.at(0) == "!") {
         await changeApplicationIGN(message)
@@ -39,7 +46,6 @@ export async function messageCreate(client: Client, message: DiscordJS.Message) 
     if (message.channelId == MAIN_ANNOUNCEMENT_CHANNEL && message.author.id != client.user.id) {
         await message.react("👍")
         await message.react("👎")
-        return
     }
 
     // if message is generateapplicationbutton then create an embed with the button
