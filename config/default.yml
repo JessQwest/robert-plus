@@ -8,6 +8,8 @@ server-info:
   # The ID of the main server
   server-id: ''
 
+  admin-list: "123456789123456789,123456789123456789,123456789123456789"
+
 application:
   # determines which applications are currently accepting invitations
   server-application:

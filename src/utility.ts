@@ -1,4 +1,4 @@
-import {RULE_MATCH_STRINGS, RULE_PHRASE_TEXT} from "./index"
+import {ADMIN_LIST, RULE_MATCH_STRINGS, RULE_PHRASE_TEXT} from "./index"
 import * as DiscordJS from "discord.js"
 import {ColorResolvable} from "discord.js"
 
@@ -131,7 +131,7 @@ function groupLines(inputString: string): string[] {
 
 export function hasAdminPerms(userId: string | null | undefined): boolean {
     if (userId == null) return false
-    const isAdmin = ["252818596777033729", "699331874408890378", "616751114355736785", "284664965686624256", "346501391931408384"].includes(userId)
+    const isAdmin = ADMIN_LIST.includes(userId)
     return isAdmin
 }
 

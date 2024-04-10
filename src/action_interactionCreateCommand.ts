@@ -10,13 +10,14 @@ import {
 import {
     countCharacterChanges,
     escapeFormatting, formatListOfStrings,
-    getDiscordDisplayName,
+    getDiscordDisplayName, hasAdminPerms,
     jaccardIndex,
     verifyUsernameInput
 } from "./utility"
 import * as DiscordJS from "discord.js"
 import fetch from "node-fetch"
 import {
+    ADMIN_LIST,
     ALERT_CHANNEL, APPLICATION_CHANNEL_ID, APPLICATION_NOTIFICATION_CHANNEL_ID,
     BOT_INFO_CHANNEL_ID, client,
     con, DEBUGMODE, IS_APPLICATION_ENABLED, IS_MAP_APPLICATION_ENABLED, IS_SHOP_APPLICATION_ENABLED, MAIN_SERVER_ID,
@@ -203,7 +204,7 @@ export async function interactionCreateCommand(client: Client, i: Interaction) {
 
     //commands past this point need special perm
     //=============================================================================================================================================================================================================================
-    const isAdmin = ["252818596777033729", "699331874408890378", "616751114355736785", "284664965686624256", "346501391931408384"].includes(user.id)
+    const isAdmin = hasAdminPerms(user.id)
     if (!isAdmin) {
         await i.reply({content: `Only staff may use this command. ${user.id}`, ephemeral: true})
         return
@@ -233,7 +234,7 @@ export async function interactionCreateCommand(client: Client, i: Interaction) {
 
         const success = await timeoutUser(targetedGuildMember, hours,`${targetedGuildMember.nickname} has been timed out by ${i.user.username} for ${hours} hours.`)
         if (success) {
-            i.reply(`${targetedGuildMember.nickname} has been timed out by ${i.user.username} for ${hours} hours.`)
+            i.reply(`${targetedGuildMember.nickname ? targetedGuildMember.nickname : targetedGuildMember.user.username} has been timed out by ${i.user.username} for ${hours} hours.`)
         } else {
             i.reply(`I am unable to time out ${targetedGuildMember.nickname}. Please make sure the permissions are ok and that the timeout duration is between 1 and 672 hours (4 weeks)`)
         }

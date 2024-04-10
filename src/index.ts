@@ -84,6 +84,7 @@ export const APPLICATION_SERVER_ID = DEBUGMODE ? config.get('debug-mode.debug-se
 export const MAIN_SERVER_ID = config.get('server-info.server-id')
 
 // other constants
+export const ADMIN_LIST = config.get('server-info.admin-list').split(",");
 export const staffReactThreshold: number = DEBUGMODE ? 1 : config.get('application.application-vote-threshold')
 export const APPLICATION_VOTE_REMINDER_THRESHOLD_HOURS = DEBUGMODE ? 0.005 : config.get('application.application-reminder-interval') // how often, in hours, should the bot remind people to vote on applications
 export const APPLICATION_MAX_REMIND_TIMES = config.get('application.application-reminder-times') // how many times should the bot remind people to vote on applications. a give up message will be sent after this
