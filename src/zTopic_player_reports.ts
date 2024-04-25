@@ -1,8 +1,8 @@
 import {GuildMember, TextBasedChannel} from "discord.js"
-import {APPLICATION_SERVER_ID, client, con, lpcon, MAIN_SERVER_ID} from "./index"
+import {client, con, lpcon, MAIN_SERVER_ID} from "./index"
 import {discordIdToMinecraftUuid} from "./api"
 import {colors, ranks} from "./action_guildMemberUpdate"
-import {addDashesToUuid, stringToEmbeds} from "./utility"
+import {addDashesToUuid} from "./utility"
 import * as util from "util"
 
 export async function generatePlayerReport(channel: TextBasedChannel) {
@@ -45,6 +45,7 @@ export async function generatePlayerReport(channel: TextBasedChannel) {
         let flagNonDonatorHasColor = false
         let flagDonatorHasMultipleColors = false
         let flagMultipleMinecraftRoles = false
+        let flagMultipleMinecraftColors = false
         const memberRoles = member.roles.cache
         const discordId = member.id
         const mcUuid = await discordIdToMinecraftUuid(discordId)
@@ -102,7 +103,7 @@ export async function generatePlayerReport(channel: TextBasedChannel) {
         if (dashedUuid != null) {
             try {
                 const result = await lpQueryAsync(
-                    `SELECT COUNT(*) AS count FROM s9496_luckperms.luckperms_user_permissions WHERE uuid = ? AND permission IN (?)`,
+                    `SELECT COUNT(*) AS count FROM luckperms_user_permissions WHERE uuid = ? AND permission IN (?)`,
                     [dashedUuid, conflictingRankNames]
                 )
 
@@ -110,10 +111,8 @@ export async function generatePlayerReport(channel: TextBasedChannel) {
                     // Handle the case where there are no matching records
                 } else {
                     const count = result[0].count
-                   // console.log(`${member.user.username} has ${count} conflicting ranks from list (${conflictingRankNamesString})`)
 
                     if (parseInt(count, 10) > 1) {
-                        //console.warn("AAAAAAAAAAAAAAAAAAAAAAAAAA")
                         flagMultipleMinecraftRoles = true
                     }
                 }
@@ -124,6 +123,26 @@ export async function generatePlayerReport(channel: TextBasedChannel) {
 
         // check 6 role sync
         // check 7 minecraft multiple colours
+        if (dashedUuid != null) {
+            try {
+                const result = await lpQueryAsync(
+                    `SELECT COUNT(*) AS count FROM luckperms_user_permissions WHERE uuid = ? AND permission LIKE 'prefix.1.§f%'`,
+                    [dashedUuid]
+                )
+
+                if (!result || result.length === 0) {
+                    // Handle the case where there are no matching records
+                } else {
+                    const count = result[0].count
+
+                    if (parseInt(count, 10) > 1) {
+                        flagMultipleMinecraftColors = true
+                    }
+                }
+            } catch (error) {
+                console.warn(`Error in check 7 (jx0074) + ${error}`)
+            }
+        }
         // check 8 similar names
         // check 9 whitelisted player not in discord server
         // output
@@ -133,5 +152,6 @@ export async function generatePlayerReport(channel: TextBasedChannel) {
         if (flagNonDonatorHasColor) console.warn(`${member.user.username} failed check flagNonDonatorHasColor`)
         if (flagDonatorHasMultipleColors) console.warn(`${member.user.username} failed check flagDonatorHasMultipleColors ${colorRoles}`)
         if (flagMultipleMinecraftRoles) console.warn(`${member.user.username} failed check flagMultipleMinecraftRoles`)
+        if (flagMultipleMinecraftColors) console.warn(`${member.user.username} failed check flagMultipleMinecraftColors`)
     }
 }

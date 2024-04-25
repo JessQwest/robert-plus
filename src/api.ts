@@ -9,7 +9,7 @@ export async function nameToUuid(username: String | null): Promise<string>{
     if (username == null) return ""
     if (!verifyUsernameInput(username)) {
         console.log(`Invalid username entered (${username}) (jx0038)`)
-        return ""
+        throw new Error(`Invalid input entered`)
     }
     const {
         name,

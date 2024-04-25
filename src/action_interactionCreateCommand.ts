@@ -65,37 +65,38 @@ export async function interactionCreateCommand(client: Client, i: Interaction) {
     if (commandName === "getdiscordname") {
         try {
             await i.deferReply({ephemeral: true})
-            // @ts-ignore
-            if (!verifyUsernameInput(options.getString("mcusername"))) {
-                await i.editReply("Invalid name input")
-                return
-            }
-            const {
-                name,
-                id
-            } = await fetch('https://api.mojang.com/users/profiles/minecraft/' + options.getString("mcusername")).then((response: { json: () => any }) => response.json())
 
-            if (name == null && id == null) {
-                i.editReply("This isn't working right now, try again later or bug Jessica about it")
-                return
-            }
-            console.log(`dc id to look up = ${id}`)
-            var returnString = `There is no record for ${options.getString("mcusername")}`
+            let id: String
 
             try {
-                const result = await new Promise((resolve, reject) => {
+                id = await nameToUuid(options.getString("mcusername"))
+            } catch (e) {
+                i.editReply(`${e}`)
+                return
+            }
+
+            if (id == null) return
+
+            let returnString = `There is no record for ${options.getString("mcusername")}`
+
+            try {
+                const result: any[] = await new Promise((resolve, reject) => {
                     con.query('SELECT discordId FROM accountLinking WHERE minecraftUuid = ?', [id], (err: any, result: any, fields: any) => {
                         if (err) reject(err)
                         resolve(result)
                     })
                 })
 
-                var firstEntry: boolean = true
-                // @ts-ignore
-                for (var sqlItem of result) {
-                    var dcId = sqlItem['discordId']
+                let firstEntry: boolean = true
+                if (result == undefined || result.length == 0) {
+                    i.editReply(returnString)
+                    return
+                }
+
+                for (let sqlItem of result) {
+                    let dcId = sqlItem['discordId']
                     console.log(`dcId = ${dcId}`)
-                    var discordUsername: string = "Unknown user"
+                    let discordUsername: string = `Unknown user`
                     try {
                         const value = await client.users.fetch(dcId)
                         discordUsername = getDiscordDisplayName(value)
@@ -103,25 +104,23 @@ export async function interactionCreateCommand(client: Client, i: Interaction) {
                             firstEntry = false
                             returnString = `${options.getString("mcusername")} is known on Discord as `
                         } else {
-                            returnString = returnString + " and "
+                            returnString = `${returnString} and `
                         }
                         returnString = returnString + discordUsername
-                        console.log(`workin on it - ${returnString}`)
                     } catch (error) {
-                        console.log("could not get username " + error)
+                        console.log(`Could not get username: ${error} (jx0072)`)
                     }
                 }
 
-                console.log("about to print")
                 i.editReply(returnString)
                 return
             } catch (error) {
-                console.log("Error in SQL query: " + error)
+                console.log(`Error in SQL query: ${error} (jx0073)`)
             }
 
         }
         catch (e) {
-            await i.editReply("Invalid name.")
+            await i.editReply(`Invalid name.`)
             return
         }
     }
