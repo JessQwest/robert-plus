@@ -173,7 +173,7 @@ export async function interactionCreateCommand(client: Client, i: Interaction) {
         let targetedUser: User | null = options.getUser("username")
         let targetedGuildMember: GuildMember | undefined = undefined
         let adminTriggered: boolean = false
-        if (targetedUser != null) {
+        if (targetedUser != null && i?.memberPermissions?.has("ADMINISTRATOR")) {
             targetedGuildMember = await guild?.members.fetch(targetedUser)
             adminTriggered = true
         } else {
@@ -184,20 +184,20 @@ export async function interactionCreateCommand(client: Client, i: Interaction) {
             return
         }
         // if a user has been targeted and the executer has admin perms
-        if (adminTriggered && !i?.memberPermissions?.has("ADMINISTRATOR")) {
-            bedtimeSuccess = await timeoutUser(targetedGuildMember, 6,`${targetedGuildMember.nickname} has been sent to bed by ${i.user.username}!`)
+        if (adminTriggered) {
+            bedtimeSuccess = await timeoutUser(targetedGuildMember, 6,`${targetedGuildMember.displayName} has been sent to bed by ${i.user.displayName}!`)
             if (bedtimeSuccess) {
-                i.reply(`${targetedGuildMember.nickname} has been sent to bed by ${i.user.username}!`)
+                i.reply(`${targetedGuildMember} has been sent to bed by ${i.user.displayName}!`)
                 return
             }
         } else {
-            bedtimeSuccess = await timeoutUser(targetedGuildMember, 6, `${i.user.username} requested to go to bed`)
+            bedtimeSuccess = await timeoutUser(targetedGuildMember, 6, `${i.user.displayName} requested to go to bed`)
             if (bedtimeSuccess) {
-                i.reply(`${i.user.username} requested to go to bed, see you in 6 hours!`)
+                i.reply(`${i.user} requested to go to bed, see you in 6 hours!`)
                 return
             }
         }
-        await i.reply(`I am unable to send ${targetedGuildMember.nickname} to bed`)
+        await i.reply(`I am unable to send ${targetedGuildMember.displayName} to bed`)
         return
     }
 
