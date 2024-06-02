@@ -45,7 +45,6 @@ export async function messageCreate(client: Client, message: DiscordJS.Message) 
     // thumbs up and thumbs down reactions if the message is in announcements
     if (message.channelId == MAIN_ANNOUNCEMENT_CHANNEL && message.author.id != client.user.id) {
         await message.react("👍")
-        await message.react("👎")
     }
 
     // if message is generateapplicationbutton then create an embed with the button
