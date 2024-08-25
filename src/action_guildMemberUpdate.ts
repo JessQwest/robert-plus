@@ -1,5 +1,6 @@
 import {addDashesToUuid, countCharacterChanges, getDiscordDisplayName} from "./utility"
 import {
+    BIRTHDAY_MESSAGE,
     BIRTHDAY_MESSAGE_CHANNEL_ID,
     BIRTHDAY_ROLE_ID,
     client,
@@ -66,7 +67,7 @@ async function userRoleAdded(oldMember: GuildMember | PartialGuildMember, newMem
         if (!oldMember.roles.cache.has(role.id)) {
             console.log("Role Added", role.id)
             // send happy birthday message if applicable
-            if (role.id == `${BIRTHDAY_ROLE_ID}`) {
+            if (BIRTHDAY_MESSAGE == true && role.id == `${BIRTHDAY_ROLE_ID}`) {
                 console.log(`Saying happy birthday to ${newMember.user.username}`)
                 const bdayChannel = client.channels.cache.get(BIRTHDAY_MESSAGE_CHANNEL_ID) as TextChannel
                 const nickname = newMember.displayName

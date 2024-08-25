@@ -1,6 +1,7 @@
 import * as DiscordJS from "discord.js"
 import {Client, Message, MessageActionRow, MessageButton, MessageEmbed, TextChannel} from "discord.js"
 import {
+    ANNOUNCEMENT_THUMBS,
     MAIN_ANNOUNCEMENT_CHANNEL,
     MESSAGES_TO_ROBERT_CHANNEL_ID, ROBERT_USER_ID, SERVER_NAME
 } from "./index"
@@ -42,9 +43,9 @@ export async function messageCreate(client: Client, message: DiscordJS.Message) 
         return
     }
 
-    // thumbs up and thumbs down reactions if the message is in announcements
+    // thumbs reactions if the message is in announcements
     if (message.channelId == MAIN_ANNOUNCEMENT_CHANNEL && message.author.id != client.user.id) {
-        await message.react("👍")
+        if (ANNOUNCEMENT_THUMBS == true) await message.react("👍")
     }
 
     // if message is generateapplicationbutton then create an embed with the button

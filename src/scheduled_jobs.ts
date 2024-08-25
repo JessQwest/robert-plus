@@ -19,19 +19,6 @@ import {
 } from "./zTopic_application_creator"
 import * as DiscordJS from "discord.js"
 
-var Jessica: string = "252818596777033729"
-var schrute: string = "699331874408890378"
-
-//every day at 7am
-export async function sleepyTime() {
-    console.log(`sleepytime task @ ${new Date().toISOString()}`)
-    let holidayhome = await client.guilds.fetch("885542685090410586")
-    let juser = await holidayhome.members.fetch(Jessica)
-    let suser = await holidayhome.members.fetch(schrute)
-    await juser.voice.disconnect()
-    await suser.voice.disconnect()
-}
-
 export async function hourlyHousekeepTask() {
     await postApplicationVotingReminder()
 }

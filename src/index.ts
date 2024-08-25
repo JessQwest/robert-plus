@@ -29,6 +29,7 @@ console.log(`Running with debug mode set to ${DEBUGMODE}`)
 // text constants
 export const SERVER_NAME = config.get('server-info.server-name')
 export const SERVER_APPLICATION_URL = config.get('server-info.server-application-url')
+export const RULE_CHECKING_ENABLED = config.get('rule-checking.enabled')
 export const RULE_PHRASE_EMOJI: string = config.get('rule-checking.rule-phrase-emoji')
 export const RULE_PHRASE_TEXT: string = config.get('rule-checking.rule-phrase-text')
 export const RULE_MINIMUM_AGE: string = config.get('rule-checking.rule-minimum-age')
@@ -53,10 +54,12 @@ export const DEBUG_CHANNEL_ID = config.get('debug-mode.debug-channel-id')
 
 export const ALERT_CHANNEL = DEBUGMODE ? DEBUG_CHANNEL_ID : config.get('channel-ids.alert')
 export const BOT_INFO_CHANNEL_ID = config.get('channel-ids.bot-info')
-export const BOT_LOG_CHANNEL_ID = config.get('channel-ids.bot-log')
-export const STAFF_BOT_LOG_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : config.get('channel-ids.staff-bot-log')
+export const BOT_LOG_CHANNEL_ID = config.get('channel-ids.bot-log') // developer only
+export const STAFF_BOT_LOG_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : config.get('channel-ids.staff-bot-log') // for all staff to see
 export const MESSAGES_TO_ROBERT_CHANNEL_ID = config.get('channel-ids.messages-to-robert')
+export const ANNOUNCEMENT_THUMBS = config.get('features.announcement-thumbs') // allow thumbs up on announcements
 export const MAIN_ANNOUNCEMENT_CHANNEL = DEBUGMODE ? DEBUG_CHANNEL_ID : config.get('features.announcement-thumbs-channel-id')
+export const BIRTHDAY_MESSAGE = config.get('features.birthday-message') // allow birthday messages
 export const BIRTHDAY_MESSAGE_CHANNEL_ID = DEBUGMODE ? DEBUG_CHANNEL_ID : config.get('features.birthday-message-channel-id') // for posting birthday messages
 
 export const IS_APPLICATION_ENABLED = config.get('application.server-application.enabled')
@@ -82,6 +85,7 @@ export const APPLICATION_SHOP_MESSAGE_ID = DEBUGMODE ? config.get('debug-mode.sh
 // server constants
 export const APPLICATION_SERVER_ID = DEBUGMODE ? config.get('debug-mode.debug-server-id') : config.get('application.application-server-id')
 export const MAIN_SERVER_ID = config.get('server-info.server-id')
+export const DEBUG_SERVER_ID = config.get('debug-mode.debug-server-id')
 
 // other constants
 export const ADMIN_LIST = config.get('server-info.admin-list').split(",");
@@ -212,11 +216,6 @@ cron.schedule('* * * * *', async () => { // 0 * * * * for every hour or * * * * 
 // daily housekeep at 7am gmt hopefully
 cron.schedule('0 7 * * *', async () => { // 0 7 * * * for every 7am or * * * * * for every min
     await scheduled_jobs.dailyHousekeepTask()
-})
-
-// sleepy time every day at 7am
-cron.schedule('0 7 * * *', async () => {
-    await scheduled_jobs.sleepyTime()
 })
 
 process.on('unhandledRejection', error => {

@@ -1,4 +1,4 @@
-import {ADMIN_LIST, RULE_MATCH_STRINGS, RULE_PHRASE_TEXT} from "./index"
+import {ADMIN_LIST, RULE_CHECKING_ENABLED, RULE_MATCH_STRINGS, RULE_PHRASE_TEXT} from "./index"
 import * as DiscordJS from "discord.js"
 import {ColorResolvable} from "discord.js"
 
@@ -32,7 +32,8 @@ export function verifyUsernameInput(username: String) {
     return true
 }
 
-export function containsRulePhrase(inputString: string): boolean{
+export function containsRulePhrase(inputString: string): boolean {
+    if (!RULE_CHECKING_ENABLED) return true
     for (const string of RULE_MATCH_STRINGS) {
         if (inputString.toLowerCase().includes(string.toLowerCase())) {
             return true

@@ -1,25 +1,7 @@
 import * as DiscordJS from "discord.js"
 import {client} from "./index"
 
-let lastTits = 0
-
 export async function easter_egg_messageCreate(message: DiscordJS.Message) {
-    // if azure sends a long message
-    if (message.content.length > 500 && message.author.id == "402216790798630915") {
-        let randomInt = Math.floor(Math.random() * 3)
-        if (randomInt == 1) {
-            message.channel.send(":flushed:")
-        }
-    }
-
-    // if stella sends a message
-    if(message.author.id === "538117228697223185") {
-        let randomInt = Math.floor(Math.random() * 2000)
-        if (randomInt == 1) {
-            await message.reply("You're awesome")
-        }
-    }
-
     // if someone says A
     if (message.content === "A") {
         let randomInt = Math.floor(Math.random() * 20)
@@ -80,19 +62,5 @@ export async function easter_egg_messageCreate(message: DiscordJS.Message) {
         await message.reply({
             content: "I live at 308 negra arroyo lane albequerque new mexico 87104"
         })
-    }
-
-    // if penguin sends a mccafe check in #mugs
-    if (message.content.toLowerCase().includes("mccafe check") && message.author.id == "313080215100325889" && message.channelId == "878007042940485682") {
-        message.channel.send("the mccafe check")
-    }
-
-    // responds with a gif to demi saying tits - cooldown of 6 hours
-    let currentTime = Math.floor(new Date().getTime() / 1000)
-    if (message.content.toLowerCase().includes("tits") && message.author.id == "596759267382657024" && (currentTime - lastTits > 21600 || lastTits == 0)) {
-        await message.reply("https://tenor.com/view/good-boy-pat-on-head-stitch-gif-14742401")
-        // set lastTits to now as a unix timestamp
-        lastTits = Math.floor(new Date().getTime() / 1000)
-
     }
 }

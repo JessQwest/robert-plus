@@ -46,8 +46,6 @@ application:
   application-reminder-times: 3
 
 features:
-  # These settings don't actually work, Coming soon
-
   # React with a thumbs up and thumbs down on announcements
   announcement-thumbs: true
   # Where the main server places its main announcements, for automatic thumbs up/down
@@ -68,8 +66,6 @@ features:
 
 rule-checking:
   # This module scans applications by applicants to see if they mention the primary phrase. It is best to have this for something that has a corresponding emoji, like a duck
-
-  # always enabled ============================
   enabled: true
 
   # The primary word to describe

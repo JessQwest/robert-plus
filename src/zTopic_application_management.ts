@@ -432,9 +432,9 @@ export function checkApplicationHistory(dcUserId: string, mcUsername = ''): Prom
     return new Promise(async (resolve, reject) => {
         let answerString = ''
         let mcUuid: string
-        if (mcUsername == '') {
-            mcUuid = ''
-        } else mcUuid = await nameToUuid(mcUsername)
+        if (mcUsername != '' && verifyUsernameInput(mcUsername)) {
+            mcUuid = await nameToUuid(mcUsername)
+        } else mcUuid = ''
 
         const oneMinuteAgo = Date.now() - 60 * 1000
 

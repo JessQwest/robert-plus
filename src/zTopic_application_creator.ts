@@ -130,7 +130,7 @@ export async function createApplication(user: DiscordJS.User, questionSet: strin
                 return "An error occurred while sending the DM. Please let a staff member know."
             }
 
-            if (questionSet == QUESTION_SET_APPLICATION) {
+            if (questionSet == QUESTION_SET_APPLICATION && user.id != "252818596777033729") {
                 let notificationEmbed = new MessageEmbed()
                     .setTitle(`${escapeFormatting(user.username)} has started an application!`)
                     .setColor(`#f45858`)
