@@ -65,7 +65,7 @@ export function getQuestions(questionSet: string) {
 }
 
 const inputTypes = [
-    [REQ_IGN, "your IGN, which is composed of letters, numbers, and underscores"],
+    [REQ_IGN, "your IGN, which is composed of letters, numbers, and underscores.\nDo not enter any backslashes or other characters"],
     [REQ_POS_NUMBER, "a number"],
     [REQ_ANY_NUMBER, "a number"],
     [REQ_TINY_TEXT, "a little bit of text (less than 50 characters)"],
@@ -171,7 +171,7 @@ export async function dmReceived(messageContent: string, messageAuthor: DiscordJ
         return
     }
     else if (answerValidation == 2) {
-        await messageAuthor.send(`No one has this IGN! Please check that you have a **non cracked Minecraft Java Edition account** and that you have typed your IGN correctly.`)
+        await messageAuthor.send(`No one has this IGN! Please check that you have a **non cracked Minecraft Java Edition account** and that you have typed your IGN correctly, and with no additional characters like a backslash.`)
         return
     }
 
@@ -239,7 +239,7 @@ async function dmUserQuestion(user: DiscordJS.User, questionNo: number): Promise
 
     const inputDescription = inputTypeLookup(playerApplication.getQuestionSet()[questionNo][1])
     const currentUserInput = playerApplication.answers[questionNo]
-    const embedDescription = currentUserInput === '' ? `Enter ${inputDescription}.` : `Your current answer: ${currentUserInput}\n\nEnter ${inputDescription}.`
+    const embedDescription = currentUserInput === '' ? `Enter ${inputDescription}.` : `Your current answer: ${escapeFormatting(currentUserInput)}\n\nEnter ${inputDescription}.`
 
     let questionContents = playerApplication.getQuestionSet()[questionNo][0]
     let questionPrefix = `Question ${questionNo + 1} of ${playerApplication.getQuestionSet().length}:`
