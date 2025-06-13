@@ -29,7 +29,7 @@ import {
 
 // @ts-ignore
 import { v4 as uuidv4 } from 'uuid'
-import {nameToUuid, uuidToUsername} from "./api"
+import { nameToUuid, USERNAME_API, uuidToUsername } from "./api"
 import {createRoleButton} from "./zTopic_role_manager"
 import {startShopCheck} from "./zTopic_shop_check"
 
@@ -295,7 +295,7 @@ export async function interactionCreateCommand(client: Client, i: Interaction) {
         let mcName = ""
         let mcuuid = ""
         try {
-            const {name, id} = await fetch(`https://api.mojang.com/users/profiles/minecraft/${mcUserInput}`).then((response: { json: () => any }) => response.json())
+            const {name, id} = await fetch(`${USERNAME_API}${mcUserInput}`).then((response: { json: () => any }) => response.json())
             mcuuid = id
             mcName = name
             if (mcuuid == null) {
@@ -353,7 +353,7 @@ export async function interactionCreateCommand(client: Client, i: Interaction) {
         }
 
         if (mcUser != null) {
-            const {name, id} = await fetch('https://api.mojang.com/users/profiles/minecraft/' + mcUser).then((response: { json: () => any }) => response.json())
+            const {name, id} = await fetch(USERNAME_API + mcUser).then((response: { json: () => any }) => response.json())
             const mcUuid = id
             console.log(`deleting with mcID = ${mcUuid}`)
             if (mcUuid != null)
@@ -530,7 +530,7 @@ export async function interactionCreateCommand(client: Client, i: Interaction) {
             const {
                 name,
                 id
-            } = await fetch('https://api.mojang.com/users/profiles/minecraft/' + options.getString("mcusername")).then((response: { json: () => any }) => response.json())
+            } = await fetch(USERNAME_API + options.getString("mcusername")).then((response: { json: () => any }) => response.json())
 
             if (name == null && id == null) {
                 await i.editReply("This isn't working right now, try again later or bug Jessica about it")

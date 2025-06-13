@@ -4,6 +4,8 @@ import {con, RULE_PHRASE_TEXT} from "./index"
 import * as DiscordJS from "discord.js"
 import {MessageEmbed} from "discord.js"
 
+export const USERNAME_API = "https://api.minecraftservices.com/minecraft/profile/lookup/name/"
+
 // given the minecraft username, gets the uuid for that username
 export async function nameToUuid(username: String | null): Promise<string>{
     if (username == null) return ""
@@ -15,7 +17,7 @@ export async function nameToUuid(username: String | null): Promise<string>{
         name,
         id,
         errorMessage
-    } = await fetch(`https://api.mojang.com/users/profiles/minecraft/${username}`).then((response: { json: () => any }) => response.json())
+    } = await fetch(`${USERNAME_API}${username}`).then((response: { json: () => any }) => response.json())
     console.log (`name to uuid lookup result for ${username}: name:${name} id:${id} errormessage:${errorMessage}`)
     if (name == null && id == null && errorMessage == null) {
         console.log(`name to uuid invalid return for ${username}`)
@@ -33,7 +35,7 @@ export async function nameToUuid(username: String | null): Promise<string>{
 
 export async function usernameCheck(username: string, textChannel: DiscordJS.TextChannel | undefined = undefined): Promise<Boolean> {
     return new Promise(async (resolve, reject) => {
-        const url = `https://api.mojang.com/users/profiles/minecraft/${username}`
+        const url = `${USERNAME_API}${username}`
         const maxTries: number = 1
 
         for (let i = 0; i < maxTries; i++) {
